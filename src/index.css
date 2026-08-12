@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  
+  --color-sidebar: #ffffff;
+  --color-main: #f8fafc;
+  
+  --color-brand-primary: #3B82F6;
+  --color-brand-primary-hover: #2563EB;
+  --color-brand-primary-light: #60A5FA;
+  
+  --color-overlay: rgba(255, 255, 255, 0.7);
+  --color-overlay-border: rgba(0, 0, 0, 0.1);
+  --color-card: rgba(255, 255, 255, 0.9);
+}
+
+@layer base {
+  body {
+    @apply bg-main text-slate-900 overflow-hidden antialiased;
+  }
+  
+  #root {
+    @apply flex w-screen h-screen;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-overlay backdrop-blur-md border border-overlay-border rounded-xl;
+  }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
