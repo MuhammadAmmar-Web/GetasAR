@@ -1,5 +1,5 @@
 import { Map, Box, HelpCircle, Info, ExternalLink } from 'lucide-react';
-import logo from '../assets/logo.png';
+import logo from '../assets/Logo.png';
 
 const mainNav = [
   { id: 'peta-desa', label: 'AR Peta Desa', sub: 'Scan QR Peta', icon: Map },
