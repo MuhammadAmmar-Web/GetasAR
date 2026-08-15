@@ -1,10 +1,18 @@
 import React from 'react';
-import { ScanLine, MapPin, Hand } from 'lucide-react';
+import { ScanLine, MapPin, Hand, X } from 'lucide-react';
 
 const OnboardingPopup = ({ onStart }) => {
   return (
     <div className="fixed inset-0 w-screen h-screen bg-slate-30/30 backdrop-blur-md flex flex-col items-center justify-center z-[90] p-6">
-      <div className="glass-panel w-full max-w-[400px] p-8 flex flex-col items-center text-center shadow-xl border border-slate-200 bg-white">
+      <div className="glass-panel relative w-full max-w-[400px] p-8 flex flex-col items-center text-center shadow-xl border border-slate-200 bg-white">
+
+        <button
+          onClick={onStart}
+          className="absolute top-3 right-3 w-9 h-9 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+          aria-label="Tutup"
+        >
+          <X size={18} />
+        </button>
 
         <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
           <ScanLine size={32} className="text-blue-600" />

@@ -6,6 +6,7 @@ import Panduan from './components/views/Panduan'
 import Tentang from './components/views/Tentang'
 import LoadingScreen from './components/views/LoadingScreen'
 import OnboardingPopup from './components/views/OnboardingPopup'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
   const [activeTab, setActiveTab] = useState('peta-desa')
@@ -36,7 +37,7 @@ function App() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       {!hasSeenOnboarding && (
         <OnboardingPopup onStart={() => setHasSeenOnboarding(true)} />
       )}
@@ -50,7 +51,7 @@ function App() {
         />
         {renderContent()}
       </div>
-    </>
+    </ErrorBoundary>
   )
 }
 

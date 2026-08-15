@@ -9,7 +9,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "postinstall": "node scripts/patch-mindar.js",
-    "compile-targets": "node scripts/compile-targets.js"
+    "compile-targets": "node scripts/compile-targets.js",
+    "generate-skybox": "node scripts/generate-skybox.js",
+    "fetch-skybox": "node scripts/fetch-skybox.js"
   },
   "dependencies": {
     "@ar-js-org/ar.js": "^3.4.8",
@@ -31,6 +33,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^6.0.4",
+    "jpeg-js": "^0.4.4",
     "oxlint": "^1.75.0",
     "pngjs": "^7.0.0",
     "postcss": "^8.5.26",

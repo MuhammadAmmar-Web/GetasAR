@@ -2,11 +2,12 @@ import React, { useState, Suspense, useRef, lazy, useEffect, useCallback } from 
 import '@google/model-viewer';
 import {
   ScanLine,
-  Map as MapIcon, X, MapPin, Clock, Info, List
+  Map as MapIcon, X, MapPin, Clock, Info, List, MonitorPlay
 } from 'lucide-react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree, useLoader } from '@react-three/fiber';
+import * as THREE from 'three';
 import LazyBackground from './LazyBackground';
-import { OrbitControls, Environment, Html, useProgress } from '@react-three/drei';
+import { OrbitControls, Environment, Html, useProgress, Lightformer } from '@react-three/drei';
 import logoppko from '../assets/logoppko.png';
 import genting from '../assets/genting.jpg';
 import truko from '../assets/truko.jpg';
@@ -24,6 +25,44 @@ function Loader() {
   );
 }
 
+// Cegah tab crash saat WebGL context hilang
+function WebGLContextHandler() {
+  const gl = useThree((state) => state.gl);
+  const scene = useThree((state) => state.scene);
+  const camera = useThree((state) => state.camera);
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const onContextLost = (e) => e.preventDefault();
+    const onContextRestored = () => {
+      gl.render(scene, camera);
+      invalidate();
+    };
+    canvas.addEventListener('webglcontextlost', onContextLost);
+    canvas.addEventListener('webglcontextrestored', onContextRestored);
+    return () => {
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
+    };
+  }, [gl, scene, camera, invalidate]);
+  return null;
+}
+
+// Background 360 gradien (equirectangular) untuk peta 3D utama
+function SkyboxBackground() {
+  const scene = useThree((state) => state.scene);
+  const texture = useLoader(THREE.TextureLoader, '/forest360.jpg');
+  useEffect(() => {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    scene.background = texture;
+    return () => {
+      scene.background = null;
+    };
+  }, [scene, texture]);
+  return null;
+}
+
 
 const poiData = {
   "Pendopo": {
@@ -36,46 +75,22 @@ const poiData = {
       "Tubing Genting menawarkan pengalaman wisata air susur sungai yang seru menggunakan ban dalam (tube). Jalur tubing ini melintasi sungai dengan air yang jernih dan arus yang bervariasi, sangat cocok untuk menguji adrenalin Anda.",
       "Selama pengarungan, pengunjung akan dimanjakan dengan pemandangan tebing sungai yang eksotis, pepohonan rindang, dan suasana alam yang masih sangat alami.",
       "Keamanan pengunjung terjamin dengan adanya pemandu lokal yang berpengalaman serta fasilitas perlengkapan standar seperti helm dan pelampung. Fasilitas bilas dan warung makan juga tersedia di sekitar area finish."
-    ],
+    ],  
     image: genting
   },
   "Poin.001": {
-    title: "Dusun Skolotok",
-    category: "Sejarah & Religi",
+    title: "Dusun Banjaran",
+    category: "Gerbang Desa",
     hours: "08.00 - 16.00 WIB",
     location: "Desa Getas",
-    shortDesc: "Terkenal dengan sejarah religi dan tradisi 'Takir' yang kental dipertahankan warga.",
+    shortDesc: "Berperan strategis sebagai gerbang penghubung utama ke wilayah Desa Getas.",
     longDesc: [
-      "Dusun Skolotok memiliki keunikan yang kuat pada nilai-nilai sejarah dan religius masyarakatnya. Salah satu tradisi yang masih sangat dilestarikan adalah tradisi Takir.",
-      "Tradisi ini merupakan warisan leluhur yang sarat akan makna spiritual dan kebersamaan warga. Dalam setiap acara adat atau keagamaan, warga saling bahu membahu menyiapkan wadah takir, yang menjadi simbol rasa syukur dan kerukunan antar sesama."
+      "Dusun Banjaran berlokasi strategis di pintu masuk wilayah, menjadikannya sebagai gerbang utama dan jalur penghubung penting antara Desa Getas dengan daerah-daerah luar di sekitarnya.",
+      "Karena posisinya yang strategis tersebut, mobilitas masyarakat dan pergerakan roda ekonomi di dusun ini terbilang cukup dinamis, menjadikannya titik perlintasan utama bagi warga maupun pengunjung."
     ],
-    image: "https://images.unsplash.com/photo-1542314831-c6a4d14eb8a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: "https://images.unsplash.com/photo-1542273917363-3b1817f69a5d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
   },
   "Poin.002": {
-    title: "Dusun Mambang",
-    category: "Pertanian & Sejarah",
-    hours: "08.00 - 16.00 WIB",
-    location: "Desa Getas",
-    shortDesc: "Menyimpan sejarah perpaduan kebudayaan pertanian masa lampau dan penyebaran agama Islam.",
-    longDesc: [
-      "Dusun Mambang dikenal sebagai wilayah yang kaya akan catatan Sejarah Pertanian dan perkembangan Islam. Jejak-jejak penyebaran agama di dusun ini berakulturasi dengan budaya agraris masyarakat setempat secara harmonis.",
-      "Pertanian di Dusun Mambang bukan hanya sekadar mata pencaharian, tetapi juga bagian dari nilai-nilai filosofis kehidupan masyarakat yang terus dijaga kelestariannya secara turun-temurun."
-    ],
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-  },
-  "Poin.003": {
-    title: "Dusun Jolinggo",
-    category: "Sentra Perkebunan",
-    hours: "08.00 - 16.00 WIB",
-    location: "Desa Getas",
-    shortDesc: "Dikenal secara luas sebagai pusat penghasil dan pengolahan kolang kaling.",
-    longDesc: [
-      "Dusun Jolinggo merupakan sentra utama pengolahan dan penghasil kolang kaling di wilayah ini. Memanfaatkan melimpahnya pohon aren di sekitar dusun, masyarakat mengolah buah aren menjadi kolang kaling bernilai ekonomis tinggi.",
-      "Proses pengolahan kolang kaling di Dusun Jolinggo masih banyak dilakukan dengan cara tradisional untuk mempertahankan kualitas, tekstur, dan cita rasa alami yang menjadikannya sebagai komoditas unggulan."
-    ],
-    image: "https://images.unsplash.com/photo-1605557202138-7d8b51d5c317?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-  },
-  "Poin.004": {
     title: "Dusun Metep",
     category: "Lanskap Alam",
     hours: "08.00 - 16.00 WIB",
@@ -86,6 +101,30 @@ const poiData = {
       "Aliran air dari mata air pegunungan langsung mengairi lahan-lahan pertanian warga, menjadikan Dusun Metep sebagai salah satu lumbung pangan lokal yang produktif sekaligus menyuguhkan lanskap pemandangan yang indah."
     ],
     image: "https://images.unsplash.com/photo-1590494496228-21d1b54c0e66?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+  },
+  "Poin.003": {
+    title: "Dusun Bleder",
+    category: "Kawasan Hijau",
+    hours: "08.00 - 16.00 WIB",
+    location: "Desa Getas",
+    shortDesc: "Kawasan hijau yang didominasi oleh area perkebunan yang sejuk dan tenang.",
+    longDesc: [
+      "Dusun Bleder adalah representasi kawasan hijau di Desa Getas. Wilayah ini didominasi oleh area perkebunan yang rimbun, memberikan suasana yang sejuk, tenang, serta udara yang sangat segar bebas polusi.",
+      "Masyarakat Dusun Bleder mengelola berbagai tanaman perkebunan yang menjadi sumber penghidupan utama, sekaligus bertindak sebagai penjaga keseimbangan ekosistem alam di sekitar tempat tinggal mereka."
+    ],
+    image: "https://images.unsplash.com/photo-1586521995568-39abaa0c2311?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+  },
+  "Poin.004": {
+    title: "Dusun Sanggar",
+    category: "Komoditas Kopi",
+    hours: "08.00 - 16.00 WIB",
+    location: "Desa Getas",
+    shortDesc: "Sentra komoditas penghasil biji kopi pilihan jenis Robusta dan Excelsa.",
+    longDesc: [
+      "Bagi para pecinta kopi, Dusun Sanggar adalah tempat yang istimewa. Kondisi geografis dan ketinggian dusun ini sangat ideal untuk perkebunan kopi, khususnya untuk budidaya kopi jenis Robusta dan Excelsa.",
+      "Kopi dari Dusun Sanggar memiliki cita rasa dan aroma khas yang kuat. Proses pasca-panen yang dilakukan oleh petani lokal secara tekun menghasilkan biji kopi berkualitas tinggi yang siap dipasarkan."
+    ],
+    image: "https://images.unsplash.com/photo-1511920170033-f8396924c348?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
   },
   "Poin.005": {
     title: "Dusun Getas",
@@ -100,16 +139,16 @@ const poiData = {
     image: "https://images.unsplash.com/photo-1587049352847-81a56d773c1c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
   },
   "Poin.006": {
-    title: "Dusun Getas",
-    category: "Pusat Pemerintahan",
+    title: "Dusun Truko",
+    category: "Budaya & Peternakan",
     hours: "08.00 - 16.00 WIB",
     location: "Desa Getas",
-    shortDesc: "Merupakan pusat pemerintahan desa dan sentra penghasil madu hutan alami.",
+    shortDesc: "Terkenal dengan pengelolaan peternakan modern dan kesenian Kuda Lumping.",
     longDesc: [
-      "Sebagai induk pemerintahan, Dusun Getas menjadi pusat administrasi dan kegiatan kemasyarakatan dari seluruh wilayah desa. Fasilitas-fasilitas utama desa sebagian besar terpusat di kawasan ini.",
-      "Selain peran administratifnya yang penting, Dusun Getas juga sangat terkenal sebagai basis penghasil madu hutan alami. Para pencari madu mengumpulkan madu murni dari kawasan hutan sekitar yang dipercaya memiliki khasiat tinggi bagi kesehatan."
+      "Dusun Truko memadukan kemajuan ekonomi peternakan dan kelestarian budaya tradisional dengan sangat baik. Di sektor ekonomi, dusun ini dikelola dengan peternakan yang mulai mengadopsi standar modern.",
+      "Di sisi lain, Dusun Truko sangat teguh memegang tradisi kesenian daerah, khususnya kesenian Kuda Lumping. Kelompok kesenian di dusun ini secara rutin mengadakan pementasan dan regenerasi untuk melestarikan budaya."
     ],
-    image: "https://images.unsplash.com/photo-1587049352847-81a56d773c1c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: truko
   },
   "Poin.007": {
     title: "Dusun Jolinggo",
@@ -124,28 +163,28 @@ const poiData = {
     image: "https://images.unsplash.com/photo-1605557202138-7d8b51d5c317?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
   },
   "Poin.008": {
-    title: "Dusun Sanggar",
-    category: "Komoditas Kopi",
+    title: "Dusun Mambang",
+    category: "Pertanian & Sejarah",
     hours: "08.00 - 16.00 WIB",
     location: "Desa Getas",
-    shortDesc: "Sentra komoditas penghasil biji kopi pilihan jenis Robusta dan Excelsa.",
+    shortDesc: "Menyimpan sejarah perpaduan kebudayaan pertanian masa lampau dan penyebaran agama Islam.",
     longDesc: [
-      "Bagi para pecinta kopi, Dusun Sanggar adalah tempat yang istimewa. Kondisi geografis dan ketinggian dusun ini sangat ideal untuk perkebunan kopi, khususnya untuk budidaya kopi jenis Robusta dan Excelsa.",
-      "Kopi dari Dusun Sanggar memiliki cita rasa dan aroma khas yang kuat. Proses pasca-panen yang dilakukan oleh petani lokal secara tekun menghasilkan biji kopi berkualitas tinggi yang siap dipasarkan."
+      "Dusun Mambang dikenal sebagai wilayah yang kaya akan catatan Sejarah Pertanian dan perkembangan Islam. Jejak-jejak penyebaran agama di dusun ini berakulturasi dengan budaya agraris masyarakat setempat secara harmonis.",
+      "Pertanian di Dusun Mambang bukan hanya sekadar mata pencaharian, tetapi juga bagian dari nilai-nilai filosofis kehidupan masyarakat yang terus dijaga kelestariannya secara turun-temurun."
     ],
-    image: "https://images.unsplash.com/photo-1511920170033-f8396924c348?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
   },
   "Poin.009": {
-    title: "Dusun Banjaran",
-    category: "Gerbang Desa",
+    title: "Dusun Skolotok",
+    category: "Sejarah & Religi",
     hours: "08.00 - 16.00 WIB",
     location: "Desa Getas",
-    shortDesc: "Berperan strategis sebagai gerbang penghubung utama ke wilayah Desa Getas.",
+    shortDesc: "Terkenal dengan sejarah religi dan tradisi 'Takir' yang kental dipertahankan warga.",
     longDesc: [
-      "Dusun Banjaran berlokasi strategis di pintu masuk wilayah, menjadikannya sebagai gerbang utama dan jalur penghubung penting antara Desa Getas dengan daerah-daerah luar di sekitarnya.",
-      "Karena posisinya yang strategis tersebut, mobilitas masyarakat dan pergerakan roda ekonomi di dusun ini terbilang cukup dinamis, menjadikannya titik perlintasan utama bagi warga maupun pengunjung."
+      "Dusun Skolotok memiliki keunikan yang kuat pada nilai-nilai sejarah dan religius masyarakatnya. Salah satu tradisi yang masih sangat dilestarikan adalah tradisi Takir.",
+      "Tradisi ini merupakan warisan leluhur yang sarat akan makna spiritual dan kebersamaan warga. Dalam setiap acara adat atau keagamaan, warga saling bahu membahu menyiapkan wadah takir, yang menjadi simbol rasa syukur dan kerukunan antar sesama."
     ],
-    image: "https://images.unsplash.com/photo-1542273917363-3b1817f69a5d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: "https://images.unsplash.com/photo-1542314831-c6a4d14eb8a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
   }
 };
 
@@ -157,6 +196,8 @@ const MainContent = () => {
   const [isARActive, setIsARActive] = useState(false);
   const [arSidebarOpen, setArSidebarOpen] = useState(true);
   const [arSelectedPoi, setArSelectedPoi] = useState(null);
+  const [showDesktopViewer, setShowDesktopViewer] = useState(false);
+  const [arFallback, setArFallback] = useState(false);
   const modelViewerRef = useRef(null);
 
   const handleMarkerClick = useCallback((poiKey) => {
@@ -169,7 +210,9 @@ const MainContent = () => {
 
   const activeData = selectedPoi || null;
 
-  // Dengarkan event ar-status dari model-viewer
+  const pendingARRef = useRef(false);
+
+  // Dengarkan event ar-status dari model-viewer (dilampirkan hanya saat viewer ter-mount)
   useEffect(() => {
     const mv = modelViewerRef.current;
     if (!mv) return;
@@ -181,39 +224,145 @@ const MainContent = () => {
       } else if (e.detail.status === 'not-presenting') {
         setIsARActive(false);
         setArSelectedPoi(null);
+      } else if (e.detail.status === 'failed') {
+        setIsARActive(false);
+        setArSelectedPoi(null);
+        setArFallback(true);
+        enableSkybox(mv);
+      }
+    };
+    // Skybox (foto hutan) hanya dimuat untuk viewer fallback non-AR.
+    // Saat mode AR, latar diganti kamera asli — skybox hanya membebani startup AR.
+    const enableSkybox = (target) => {
+      if (target && !target.skyboxImage) {
+        target.skyboxImage = '/forest360.jpg';
+      }
+    };
+    // Aktifkan AR otomatis di mobile setelah model selesai dimuat
+    const handleLoad = () => {
+      if (pendingARRef.current) {
+        pendingARRef.current = false;
+        if (!mv.canActivateAR) {
+          // Device tanpa ARCore/ARKit: jangan panggil AR, tampilkan viewer 3D saja
+          setArFallback(true);
+          enableSkybox(mv);
+          return;
+        }
+        try {
+          mv.activateAR();
+        } catch (error) {
+          console.error("Gagal membuka AR:", error);
+          setArFallback(true);
+          enableSkybox(mv);
+        }
       }
     };
     mv.addEventListener('ar-status', handleARStatus);
-    return () => mv.removeEventListener('ar-status', handleARStatus);
-  }, []);
+    mv.addEventListener('load', handleLoad);
+    return () => {
+      mv.removeEventListener('ar-status', handleARStatus);
+      mv.removeEventListener('load', handleLoad);
+    };
+  }, [showDesktopViewer]);
+
+  const handleCloseViewer = () => {
+    const mv = modelViewerRef.current;
+    if (mv) {
+      try {
+        if (mv.isPresenting) mv.exitAR();
+        mv.pause();
+      } catch (error) {
+        console.error("Gagal menutup viewer:", error);
+      }
+    }
+    pendingARRef.current = false;
+    setArFallback(false);
+    setShowDesktopViewer(false);
+  };
 
   const handleARClick = () => {
-    if (modelViewerRef.current) {
-      modelViewerRef.current.activateAR();
-    }
+    // Deteksi mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Desktop: peta 3D utama sudah interaktif — tanpa model-viewer, tombol tidak melakukan apa-apa
+    if (!isMobile) return;
+
+    setArFallback(false);
+    setShowDesktopViewer(true);
+    pendingARRef.current = true;
   };
 
   return (
     <main className="grow relative bg-slate-900 overflow-hidden flex justify-center items-center pt-14 md:pt-0 pb-20 md:pb-0">
-      {/* Hidden Model Viewer for AR */}
-      <model-viewer
-        ref={modelViewerRef}
-        src="/mapsgardu.glb"
-        meshopt-decoder="https://unpkg.com/meshoptimizer/meshopt_decoder.js"
-        ar
-        ar-modes="webxr scene-viewer quick-look"
-        camera-controls
-        style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
-      ></model-viewer>
+      
+      {/* 3D Model Viewer Modal for Desktop / Non-AR Fallback */}
+      {showDesktopViewer && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-xl flex flex-col items-center justify-center">
+          <button
+            onClick={handleCloseViewer}
+            className="absolute top-4 right-4 md:top-8 md:right-8 w-12 h-12 bg-white/10 hover:bg-white/25 hover:rotate-90 rounded-full flex items-center justify-center text-white transition-all duration-300 z-50 shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/20"
+          >
+            <X size={24} />
+          </button>
 
-      {/* 3D Model Viewer */}
+          <div className="w-full h-full md:w-[90vw] md:h-[85vh] md:rounded-3xl overflow-hidden shadow-2xl relative">
+            <model-viewer
+              ref={modelViewerRef}
+              src="/mapsgardu.glb"
+              ar
+              ar-modes="webxr quick-look"
+              camera-controls
+              auto-rotate
+              rotation-per-second="30deg"
+              interaction-prompt="auto"
+              shadow-intensity="1"
+              environment-image="neutral"
+              exposure="1.2"
+              style={{ width: '100%', height: '100%', backgroundColor: '#0f172a' }}
+            >
+              <div slot="poster" className="absolute inset-0 flex flex-col justify-center items-center bg-slate-900">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-blue-400 font-medium animate-pulse">Memuat 3D Asset...</p>
+              </div>
+            </model-viewer>
+          </div>
+
+          <div className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 shadow-lg flex items-center gap-3">
+            {arFallback ? (
+              <>
+                <MonitorPlay size={18} className="text-amber-400" />
+                <span className="text-white text-sm font-medium tracking-wide">AR tidak didukung perangkat ini — menampilkan tampilan 3D</span>
+              </>
+            ) : (
+              <>
+                <MonitorPlay size={18} className="text-blue-400" />
+                <span className="text-white text-sm font-medium tracking-wide">3D Viewer Interaktif Laptop</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3D Model Viewer (Main React Three Fiber) */}
       <div className="absolute inset-0 z-[1]">
-        <Canvas camera={{ position: [0, 25, 50], fov: 45 }}>
+        <Canvas
+          camera={{ position: [0, 25, 50], fov: 45 }}
+          dpr={[1, 1.5]}
+          frameloop={showDesktopViewer || isARActive ? 'never' : 'demand'}
+          gl={{ antialias: false, powerPreference: 'high-performance' }}
+        >
+          <WebGLContextHandler />
+          <SkyboxBackground />
           <ambientLight intensity={0.7} />
           <directionalLight position={[10, 20, 10]} intensity={1.5} />
+          <hemisphereLight args={['#87CEEB', '#4a5a3a', 0.4]} />
           <Suspense fallback={<Loader />}>
             <LazyModel onMarkerClick={handleMarkerClick} />
-            <Environment preset="forest" background blur={0} />
+            <Environment resolution={256} frames={1}>
+              <Lightformer intensity={2} position={[0, 5, -9]} scale={[10, 10, 1]} color="white" />
+              <Lightformer intensity={1.5} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 0.5, 1]} />
+              <Lightformer intensity={1} position={[5, 1, -1]} rotation-y={-Math.PI / 2} scale={[20, 0.5, 1]} />
+            </Environment>
           </Suspense>
           <OrbitControls
             makeDefault
@@ -231,13 +380,12 @@ const MainContent = () => {
       </div>
 
       {/* Top Right AR Button - Responsif Mobile & Desktop */}
-
       <button
         onClick={handleARClick}
-        className="absolute top-20 md:top-6 right-4 md:right-6 flex items-center gap-2.5 px-4 md:px-5 py-2 md:py-2.5 rounded-full z-20 bg-white/90 hover:bg-white text-slate-800 backdrop-blur-md shadow-md transition-all border border-slate-200 cursor-pointer"
+        className="absolute top-20 md:top-6 right-4 md:right-6 flex items-center gap-2.5 px-4 md:px-5 py-2 md:py-2.5 rounded-full z-20 bg-white from-white to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-black shadow-lg shadow-blue-900/50 hover:shadow-blue-900/70 transition-all border border-blue-400/30 cursor-pointer transform hover:scale-105 active:scale-95"
       >
-        <ScanLine size={18} className="text-slate-800" />
-        <span className="text-[12px] md:text-[13px] font-bold text-slate-900">Lihat di ruang Anda</span>
+        <ScanLine size={18} className="text-black" />
+        <span className="text-[12px] md:text-[13px] font-bold text-black tracking-wide">Lihat 3D / AR</span>
       </button>
 
       {/* Detail Card (3D viewer) */}

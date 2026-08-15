@@ -1,18 +1,8 @@
 import React from 'react';
-import { useThree } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 function Model({ onMarkerClick }) {
-  const { gl } = useThree();
-  const { scene } = useGLTF('/mapsgardu.glb', undefined, undefined, (loader) => {
-    const ktx2Loader = new KTX2Loader()
-      .setTranscoderPath('https://unpkg.com/three@0.185.1/examples/jsm/libs/basis/')
-      .detectSupport(gl);
-    loader.setKTX2Loader(ktx2Loader);
-    loader.setMeshoptDecoder(MeshoptDecoder);
-  });
+  const { scene } = useGLTF('/mapsgardu.glb');
 
   const resolvePoiKey = (object) => {
     let node = object;
