@@ -14,7 +14,6 @@
     "fetch-skybox": "node scripts/fetch-skybox.js"
   },
   "dependencies": {
-    "@ar-js-org/ar.js": "^3.4.8",
     "@google/model-viewer": "^4.3.1",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
