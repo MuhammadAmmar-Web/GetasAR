@@ -72,7 +72,7 @@ const Tentang = () => {
           
           {/* Text Content */}
           <div className="flex-1 max-w-xl z-10">
-            <img src={logoppko} alt="Logo PPKO" className="h-8 md:h-10 mb-6 object-contain" />
+            <img src={logoppko} alt="Logo PPKO" loading="lazy" className="h-8 md:h-10 mb-6 object-contain" />
             <span className="text-blue-600 font-bold text-[11px] tracking-widest uppercase mb-4 block">TENTANG APLIKASI</span>
             <h1 className="text-4xl md:text-[3.25rem] font-extrabold text-slate-900 leading-[1.1] mb-6">
               Kenali Potensi <br/> <span className="text-blue-600">Desa Getas</span> <br/> melalui <span className="text-blue-600">AR</span>

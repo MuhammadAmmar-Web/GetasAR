@@ -5,13 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/copy-basis.js",
+    "prebuild": "node scripts/optimize-images.js && node scripts/copy-basis.js",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "postinstall": "node scripts/patch-mindar.js",
     "compile-targets": "node scripts/compile-targets.js",
-    "generate-skybox": "node scripts/generate-skybox.js",
     "fetch-skybox": "node scripts/fetch-skybox.js"
   },
   "dependencies": {

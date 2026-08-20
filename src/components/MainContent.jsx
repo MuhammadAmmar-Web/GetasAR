@@ -1,5 +1,4 @@
 import React, { useState, Suspense, useRef, lazy, useEffect, useCallback } from 'react';
-import '@google/model-viewer';
 import {
   ScanLine,
   Map as MapIcon, X, MapPin, Clock, Info, MonitorPlay, HelpCircle
@@ -287,12 +286,21 @@ const MainContent = () => {
     setShowDesktopViewer(false);
   };
 
-  const handleARClick = () => {
+  const handleARClick = async () => {
     // Deteksi mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // Desktop: peta 3D utama sudah interaktif — tanpa model-viewer, tombol tidak melakukan apa-apa
     if (!isMobile) return;
+
+    try {
+      // Model-viewer (~470KB) hanya dimuat saat tombol diklik, bukan di load awal
+      await import('@google/model-viewer');
+    } catch (error) {
+      console.error('Gagal memuat model-viewer:', error);
+      setArFallback(true);
+      return;
+    }
 
     setArFallback(false);
     setShowDesktopViewer(true);

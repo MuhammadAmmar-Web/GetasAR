@@ -60,7 +60,7 @@ const Panduan = () => {
 
           {/* Text Content */}
           <div className="flex-1 max-w-xl text-center md:text-left z-10 flex flex-col items-center md:items-start">
-            <img src={logoppko} alt="Logo PPKO" className="h-8 md:h-10 mb-6 object-contain" />
+            <img src={logoppko} alt="Logo PPKO" loading="lazy" className="h-8 md:h-10 mb-6 object-contain" />
             <span className="text-blue-600 font-bold text-[11px] tracking-widest uppercase mb-4 block">PANDUAN</span>
             <h1 className="text-4xl md:text-[3rem] font-extrabold text-slate-900 leading-[1.1] mb-5 md:mb-3 tracking-tight">
               Panduan <br className="hidden md:block" />

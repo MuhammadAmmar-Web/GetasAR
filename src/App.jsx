@@ -1,12 +1,23 @@
-import { useState } from 'react'
+import { useState, Suspense, lazy, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
-import MainContent from './components/MainContent'
-import ARProduk from './components/views/ARProduk'
-import Panduan from './components/views/Panduan'
-import Tentang from './components/views/Tentang'
 import LoadingScreen from './components/views/LoadingScreen'
 import OnboardingPopup from './components/views/OnboardingPopup'
 import ErrorBoundary from './components/ErrorBoundary'
+
+// Code splitting per tab — three/mind-ar/model-viewer hanya diunduh
+// saat tab terkait dibuka, bukan di load awal.
+const MainContent = lazy(() => import('./components/MainContent'))
+const ARProduk = lazy(() => import('./components/views/ARProduk'))
+const Panduan = lazy(() => import('./components/views/Panduan'))
+const Tentang = lazy(() => import('./components/views/Tentang'))
+
+function ViewFallback() {
+  return (
+    <main className="grow relative bg-slate-900 flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+    </main>
+  )
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState('peta-desa')
@@ -15,6 +26,11 @@ function App() {
   // App Flow States
   const [isAppReady, setIsAppReady] = useState(false)
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false)
+
+  // Preload chunk tab default (Peta Desa) paralel dengan LoadingScreen
+  useEffect(() => {
+    import('./components/MainContent')
+  }, [])
 
   const renderContent = () => {
     const props = { isMobileMenuOpen, setIsMobileMenuOpen, setActiveTab }
@@ -49,7 +65,9 @@ function App() {
           isOpen={isMobileMenuOpen} 
           setIsOpen={setIsMobileMenuOpen} 
         />
-        {renderContent()}
+        <Suspense fallback={<ViewFallback />}>
+          {renderContent()}
+        </Suspense>
       </div>
     </ErrorBoundary>
   )

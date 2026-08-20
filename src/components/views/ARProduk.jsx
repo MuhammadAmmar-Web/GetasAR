@@ -26,16 +26,14 @@ const ARProduk = ({ setActiveTab }) => {
 
     // Helper untuk membuat Video Texture di Three.js
     const createVideoOverlay = (videoPath) => {
-      // 1. Buat elemen HTML Video
+      // 1. Buat elemen HTML Video (tanpa src — video hanya diunduh saat marker dipindai)
       const video = document.createElement('video');
-      video.src = videoPath;
       video.crossOrigin = 'anonymous';
       video.loop = true;
       video.muted = true; // WAJIB muted agar autoplay di HP/browser berjalan lancar
       video.playsInline = true; // WAJIB untuk iOS / Safari
       video.setAttribute('playsinline', '');
-      video.preload = 'auto'; // Pastikan video dimuat sejak awal
-      video.load(); // Mulai muat video
+      video.preload = 'none'; // Hindari mengunduh 7,7MB video sebelum benar-benar dipindai
 
       // 2. Masukkan video ke dalam VideoTexture Three.js
       const texture = new THREE.VideoTexture(video);
@@ -53,7 +51,16 @@ const ARProduk = ({ setActiveTab }) => {
       const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
       const mesh = new THREE.Mesh(geometry, material);
 
-      return { mesh, video, texture };
+      const play = () => {
+        if (!video.getAttribute('src')) {
+          video.src = videoPath;
+          video.load();
+        }
+        const promise = video.play();
+        if (promise) promise.catch(() => {});
+      };
+
+      return { mesh, video, texture, play };
     };
 
     // --- Index 0: Kopi Gempol ---
@@ -63,7 +70,7 @@ const ARProduk = ({ setActiveTab }) => {
 
     anchorKopi.onTargetFound = () => {
       setActiveProduct('Kopi Gempol');
-      kopi.video.play(); // Putar video saat QR terdeteksi
+      kopi.play(); // Putar video saat QR terdeteksi
     };
     anchorKopi.onTargetLost = () => {
       setActiveProduct(null);
@@ -77,7 +84,7 @@ const ARProduk = ({ setActiveTab }) => {
 
     anchorSusu.onTargetFound = () => {
       setActiveProduct('Susu Kambing');
-      susu.video.play();
+      susu.play();
     };
     anchorSusu.onTargetLost = () => {
       setActiveProduct(null);
@@ -91,7 +98,7 @@ const ARProduk = ({ setActiveTab }) => {
 
     anchorKolang.onTargetFound = () => {
       setActiveProduct('Kolang Kaling');
-      kolang.video.play();
+      kolang.play();
     };
     anchorKolang.onTargetLost = () => {
       setActiveProduct(null);
@@ -105,7 +112,7 @@ const ARProduk = ({ setActiveTab }) => {
 
     anchorGulaAren.onTargetFound = () => {
       setActiveProduct('Gula Aren');
-      gulaAren.video.play();
+      gulaAren.play();
     };
     anchorGulaAren.onTargetLost = () => {
       setActiveProduct(null);
