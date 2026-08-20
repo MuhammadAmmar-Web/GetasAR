@@ -88,13 +88,6 @@ const main = async () => {
     process.exit(1);
   }
 
-  const pngFiles = [
-    'gula aren.png',
-    'kolang kaling.png',
-    'kopi gempol.png',
-    'susu kambing.png',
-  ];
-
   // Urutan anchor harus sesuai dengan index anchor di ARProduk.jsx:
   //   0 = Kopi Gempol, 1 = Susu Kambing, 2 = Kolang Kaling, dst
   // Karena ARProduk hanya memakai index 0,1,2, kita urutkan agar

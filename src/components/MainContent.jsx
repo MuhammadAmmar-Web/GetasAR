@@ -2,7 +2,7 @@ import React, { useState, Suspense, useRef, lazy, useEffect, useCallback } from 
 import '@google/model-viewer';
 import {
   ScanLine,
-  Map as MapIcon, X, MapPin, Clock, Info, List, MonitorPlay
+  Map as MapIcon, X, MapPin, Clock, Info, MonitorPlay, HelpCircle
 } from 'lucide-react';
 import { Canvas, useThree, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -194,10 +194,12 @@ const MainContent = () => {
   const [selectedPoi, setSelectedPoi] = useState(null);
   const [showTooltip, setShowTooltip] = useState(true);
   const [isARActive, setIsARActive] = useState(false);
-  const [arSidebarOpen, setArSidebarOpen] = useState(true);
   const [arSelectedPoi, setArSelectedPoi] = useState(null);
+  const [arShowGuide, setArShowGuide] = useState(false);
+  const [arShowAbout, setArShowAbout] = useState(false);
   const [showDesktopViewer, setShowDesktopViewer] = useState(false);
   const [arFallback, setArFallback] = useState(false);
+  const [poiCoordinates, setPoiCoordinates] = useState({});
   const modelViewerRef = useRef(null);
 
   const handleMarkerClick = useCallback((poiKey) => {
@@ -219,14 +221,19 @@ const MainContent = () => {
     const handleARStatus = (e) => {
       if (e.detail.status === 'session-started') {
         setIsARActive(true);
-        setArSidebarOpen(true);
         setArSelectedPoi(null);
+        setArShowGuide(false);
+        setArShowAbout(false);
       } else if (e.detail.status === 'not-presenting') {
         setIsARActive(false);
         setArSelectedPoi(null);
+        setArShowGuide(false);
+        setArShowAbout(false);
       } else if (e.detail.status === 'failed') {
         setIsARActive(false);
         setArSelectedPoi(null);
+        setArShowGuide(false);
+        setArShowAbout(false);
         setArFallback(true);
         enableSkybox(mv);
       }
@@ -292,6 +299,48 @@ const MainContent = () => {
     pendingARRef.current = true;
   };
 
+  const longDetailModalNode = showLongDetail && activeData && (
+    <div className="absolute inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" style={{ pointerEvents: 'all' }}>
+      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-300">
+        {/* Header Image */}
+        <div className="relative h-48 md:h-64 shrink-0 bg-slate-200">
+          <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url('${activeData.image}')` }}></div>
+          <button
+            className="absolute top-4 right-4 w-10 h-10 bg-white/30 hover:bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-slate-800 transition-colors"
+            onClick={() => setShowLongDetail(false)}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 md:p-8 overflow-y-auto">
+          <div className="flex items-center gap-2 text-blue-600 mb-3">
+            <MapPin size={18} />
+            <span className="font-semibold text-sm">{activeData.location}</span>
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">{activeData.title}</h2>
+
+          <div className="flex flex-wrap gap-3 mb-6">
+            <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-sm font-semibold">{activeData.category}</span>
+            <span className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1.5 border border-slate-100">
+              <Clock size={14} /> {activeData.hours}
+            </span>
+          </div>
+
+          <div className="prose prose-slate max-w-none text-slate-600 text-[15px]">
+            {activeData.longDesc.map((paragraph, idx) => (
+              <p key={idx} className={idx === activeData.longDesc.length - 1 ? "leading-relaxed" : "leading-relaxed mb-4"}>
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <main className="grow relative bg-slate-900 overflow-hidden flex justify-center items-center pt-14 md:pt-0 pb-20 md:pb-0">
       
@@ -324,6 +373,363 @@ const MainContent = () => {
                 <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-blue-400 font-medium animate-pulse">Memuat 3D Asset...</p>
               </div>
+
+              {Object.entries(poiCoordinates).map(([key, coord]) => (
+                <button
+                  key={`hotspot-${key}`}
+                  slot={`hotspot-${key}`}
+                  data-position={`${coord.x} ${coord.y} ${coord.z}`}
+                  data-normal="0 1 0"
+                  onClick={() => setArSelectedPoi({ key, ...poiData[key] })}
+                  className={`ar-hotspot-btn ${arSelectedPoi?.key === key ? 'active' : ''}`}
+                >
+                  <div className="ar-hotspot-pin">
+                    <MapPin size={18} />
+                  </div>
+                  <div className="ar-hotspot-label">{poiData[key].title}</div>
+                </button>
+              ))}
+
+              {/* ===== AR OVERLAY ===== */}
+              {isARActive && (
+                <div style={{
+                  position: 'fixed', inset: 0, zIndex: 9999,
+                  pointerEvents: 'none',
+                  display: 'flex', flexDirection: 'column',
+                }}>
+                  {/* Floating Navbar Pill */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(env(safe-area-inset-top, 24px) + 24px)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 'calc(100% - 40px)',
+                    maxWidth: '400px',
+                    background: 'rgba(30, 30, 30, 0.65)',
+                    backdropFilter: 'blur(12px)',
+                    borderRadius: '100px',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    padding: '8px 12px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    pointerEvents: 'all',
+                    zIndex: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      {/* Menu Button */}
+                      <button 
+                        onClick={() => {
+                          const menu = document.getElementById('ar-dropdown-menu');
+                          if(menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+                        }}
+                        style={{
+                          width: '40px', height: '40px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#ffffff',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                      </button>
+                      
+                      <h1 style={{ color: '#ffffff', fontSize: '17px', fontWeight: '600', margin: 0, letterSpacing: '0.3px' }}>AR Peta Getas</h1>
+                    </div>
+                  </div>
+
+                  {/* AR Dropdown Menu */}
+                  <div id="ar-dropdown-menu" style={{
+                    display: 'none',
+                    position: 'absolute',
+                    top: 'calc(env(safe-area-inset-top, 24px) + 85px)',
+                    left: '20px',
+                    background: 'rgba(30, 30, 30, 0.85)',
+                    backdropFilter: 'blur(12px)',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    padding: '8px',
+                    pointerEvents: 'all',
+                    zIndex: 20,
+                    minWidth: '150px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+                  }}>
+                    <button 
+                      onClick={() => { 
+                        setArShowGuide(true); setArShowAbout(false); 
+                        document.getElementById('ar-dropdown-menu').style.display = 'none';
+                      }}
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#ffffff',
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        borderRadius: '8px'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <HelpCircle size={18} />
+                      Panduan
+                    </button>
+                    
+                    <button 
+                      onClick={() => { 
+                        setArShowAbout(true); setArShowGuide(false); 
+                        document.getElementById('ar-dropdown-menu').style.display = 'none';
+                      }}
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#ffffff',
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        borderRadius: '8px'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <Info size={18} />
+                      Tentang
+                    </button>
+                  </div>
+
+                  {/* Cara Penggunaan Modal Overlay */}
+                  {arShowGuide && (
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'rgba(15,23,42,0.6)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '20px',
+                      zIndex: 100,
+                      pointerEvents: 'all'
+                    }}>
+                      <div className="animate-in fade-in zoom-in-95 duration-200" style={{
+                        background: 'white',
+                        borderRadius: '24px',
+                        width: '95%',
+                        maxWidth: '400px',
+                        padding: '24px',
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        position: 'relative'
+                      }}>
+                        <button
+                          onClick={() => setArShowGuide(false)}
+                          style={{
+                            position: 'absolute', top: '16px', right: '16px',
+                            width: '32px', height: '32px',
+                            background: '#f1f5f9', border: 'none', borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <X size={16} color="#475569" />
+                        </button>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <HelpCircle size={20} color="#3b82f6" />
+                          </div>
+                          <h3 style={{ fontSize: '18px', fontWeight: '850', color: '#0f172a', margin: 0 }}>Cara Penggunaan AR</h3>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', color: '#334155', fontSize: '13px', lineHeight: '1.5' }}>
+                          <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>1</div>
+                            <div>
+                              <strong style={{ color: '#0f172a' }}>Pindai Permukaan</strong>
+                              <p style={{ margin: '2px 0 0', color: '#64748b' }}>Arahkan kamera ke permukaan yang datar (lantai/meja) secara perlahan sampai grid deteksi muncul.</p>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>2</div>
+                            <div>
+                              <strong style={{ color: '#0f172a' }}>Letakkan Peta 3D</strong>
+                              <p style={{ margin: '2px 0 0', color: '#64748b' }}>Ketuk pada layar gawai Anda untuk memproyeksikan model 3D Peta Desa Getas ke dunia nyata.</p>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>3</div>
+                            <div>
+                              <strong style={{ color: '#0f172a' }}>Interaksi & Navigasi</strong>
+                              <p style={{ margin: '2px 0 0', color: '#64748b' }}>Gunakan 1 jari untuk memutar peta, 2 jari untuk menggeser posisi, dan cubit layar (pinch) untuk zoom.</p>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>4</div>
+                            <div>
+                              <strong style={{ color: '#0f172a' }}>Informasi Dusun</strong>
+                              <p style={{ margin: '2px 0 0', color: '#64748b' }}>Ketuk pin lokasi berwarna biru di atas peta untuk memunculkan ringkasan informasi dan penjelasan dusun.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tentang Aplikasi Modal Overlay */}
+                  {arShowAbout && (
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'rgba(15,23,42,0.6)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '20px',
+                      zIndex: 100,
+                      pointerEvents: 'all'
+                    }}>
+                      <div className="animate-in fade-in zoom-in-95 duration-200" style={{
+                        background: 'white',
+                        borderRadius: '24px',
+                        width: '95%',
+                        maxWidth: '400px',
+                        padding: '24px',
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        position: 'relative'
+                      }}>
+                        <button
+                          onClick={() => setArShowAbout(false)}
+                          style={{
+                            position: 'absolute', top: '16px', right: '16px',
+                            width: '32px', height: '32px',
+                            background: '#f1f5f9', border: 'none', borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <X size={16} color="#475569" />
+                        </button>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Info size={20} color="#3b82f6" />
+                          </div>
+                          <h3 style={{ fontSize: '18px', fontWeight: '850', color: '#0f172a', margin: 0 }}>Tentang Aplikasi</h3>
+                        </div>
+
+                        <div style={{ color: '#475569', fontSize: '13px', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <p style={{ margin: 0 }}>
+                            <strong style={{ color: '#0f172a' }}>Getas AR Peta Desa</strong> adalah aplikasi visualisasi berbasis teknologi <span style={{ color: '#3b82f6', fontWeight: '600' }}>Augmented Reality (AR)</span> yang memetakan batas wilayah, administrasi, dan potensi penting dari setiap dusun di Desa Getas.
+                          </p>
+                          <p style={{ margin: 0 }}>
+                            Melalui pemetaan interaktif ini, pengunjung maupun warga desa dapat menjelajahi lanskap geografis desa secara mendalam langsung dari web browser tanpa instalasi aplikasi tambahan.
+                          </p>
+                          <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginTop: '4px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>
+                              <p style={{ margin: '0 0 2px' }}><span style={{ fontWeight: '600', color: '#475569' }}>Karya:</span> Tim PPK Ormawa Getas</p>
+                              <p style={{ margin: 0 }}><span style={{ fontWeight: '600', color: '#475569' }}>Versi:</span> 1.2.0 (WebXR)</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Detail card dusun yang dipilih di AR (Bottom Sheet) */}
+                  {arSelectedPoi && (
+                    <div className="animate-in slide-in-from-bottom-8 duration-300" style={{
+                      position: 'absolute',
+                      bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+                      width: '90%', maxWidth: '420px',
+                      background: 'rgba(255,255,255,0.97)',
+                      borderRadius: '24px',
+                      boxShadow: '0 -8px 32px rgba(0,0,0,0.2)',
+                      overflow: 'hidden',
+                      pointerEvents: 'all',
+                      display: 'flex', flexDirection: 'column',
+                      zIndex: 30
+                    }}>
+                      {/* Image */}
+                      <div style={{ height: '140px', backgroundImage: `url('${arSelectedPoi.image}')`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                        <button
+                          onClick={() => setArSelectedPoi(null)}
+                          style={{
+                            position: 'absolute', top: '12px', right: '12px',
+                            width: '36px', height: '36px',
+                            background: 'rgba(255,255,255,0.9)',
+                            backdropFilter: 'blur(8px)',
+                            border: 'none', borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          <X size={18} color="#334155" />
+                        </button>
+                      </div>
+                      {/* Content */}
+                      <div style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <div>
+                            <h3 style={{ color: '#0f172a', fontSize: '18px', fontWeight: '800', margin: '0 0 4px' }}>{arSelectedPoi.title}</h3>
+                            <p style={{ color: '#3b82f6', fontSize: '13px', fontWeight: '600', margin: 0 }}>{arSelectedPoi.category}</p>
+                          </div>
+                        </div>
+                        
+                        <p style={{ color: '#475569', fontSize: '13px', lineHeight: 1.5, margin: '0 0 16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {arSelectedPoi.shortDesc}
+                        </p>
+                        
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <button 
+                            onClick={() => {
+                              setSelectedPoi(arSelectedPoi); // ensure modal gets correct data
+                              setShowLongDetail(true);
+                            }}
+                            style={{
+                              flex: 1,
+                              background: '#3b82f6', color: 'white',
+                              border: 'none', borderRadius: '12px',
+                              padding: '12px', fontSize: '14px', fontWeight: '600',
+                              cursor: 'pointer',
+                              boxShadow: '0 4px 12px rgba(59,130,246,0.3)'
+                            }}
+                          >
+                            Lihat Detail
+                          </button>
+                          <button 
+                            onClick={() => setArSelectedPoi(null)}
+                            style={{
+                              flex: 1,
+                              background: '#f1f5f9', color: '#475569',
+                              border: 'none', borderRadius: '12px',
+                              padding: '12px', fontSize: '14px', fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Tutup
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Long Detail Modal for AR */}
+                  {longDetailModalNode}
+                </div>
+              )}
             </model-viewer>
           </div>
 
@@ -357,7 +763,7 @@ const MainContent = () => {
           <directionalLight position={[10, 20, 10]} intensity={1.5} />
           <hemisphereLight args={['#87CEEB', '#4a5a3a', 0.4]} />
           <Suspense fallback={<Loader />}>
-            <LazyModel onMarkerClick={handleMarkerClick} />
+            <LazyModel onMarkerClick={handleMarkerClick} onCoordinatesLoaded={setPoiCoordinates} />
             <Environment resolution={256} frames={1}>
               <Lightformer intensity={2} position={[0, 5, -9]} scale={[10, 10, 1]} color="white" />
               <Lightformer intensity={1.5} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 0.5, 1]} />
@@ -447,47 +853,7 @@ const MainContent = () => {
       )}
 
       {/* Long Detail Modal */}
-      {showLongDetail && activeData && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-300">
-            {/* Header Image */}
-            <div className="relative h-48 md:h-64 shrink-0 bg-slate-200">
-              <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url('${activeData.image}')` }}></div>
-              <button
-                className="absolute top-4 right-4 w-10 h-10 bg-white/30 hover:bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-slate-800 transition-colors"
-                onClick={() => setShowLongDetail(false)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 md:p-8 overflow-y-auto">
-              <div className="flex items-center gap-2 text-blue-600 mb-3">
-                <MapPin size={18} />
-                <span className="font-semibold text-sm">{activeData.location}</span>
-              </div>
-
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">{activeData.title}</h2>
-
-              <div className="flex flex-wrap gap-3 mb-6">
-                <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-sm font-semibold">{activeData.category}</span>
-                <span className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1.5 border border-slate-100">
-                  <Clock size={14} /> {activeData.hours}
-                </span>
-              </div>
-
-              <div className="prose prose-slate max-w-none text-slate-600 text-[15px]">
-                {activeData.longDesc.map((paragraph, idx) => (
-                  <p key={idx} className={idx === activeData.longDesc.length - 1 ? "leading-relaxed" : "leading-relaxed mb-4"}>
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {!isARActive && longDetailModalNode}
 
       {/* Bottom Tooltip */}
       {showTooltip && (
@@ -500,126 +866,7 @@ const MainContent = () => {
         </div>
       )}
 
-      {/* ===== AR OVERLAY ===== */}
-      {isARActive && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          pointerEvents: 'none',
-          display: 'flex', flexDirection: 'column',
-        }}>
-          {/* Sidebar kiri — daftar dusun */}
-          {arSidebarOpen && (
-            <div style={{
-              position: 'absolute', top: 0, left: 0, bottom: 0,
-              width: '220px',
-              background: 'rgba(15,23,42,0.85)',
-              backdropFilter: 'blur(16px)',
-              borderRight: '1px solid rgba(255,255,255,0.1)',
-              display: 'flex', flexDirection: 'column',
-              padding: '16px 0',
-              overflowY: 'auto',
-              pointerEvents: 'all',
-            }}>
-              <div style={{ padding: '0 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                <p style={{ color: '#94a3b8', fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Peta Desa Getas</p>
-                <p style={{ color: '#f1f5f9', fontSize: '14px', fontWeight: '700', margin: '4px 0 0' }}>Pilih Dusun</p>
-              </div>
-              <div style={{ padding: '8px 0', flex: 1 }}>
-                {Object.entries(poiData).map(([key, data]) => (
-                  <button
-                    key={key}
-                    onClick={() => setArSelectedPoi(arSelectedPoi?.key === key ? null : { key, ...data })}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      width: '100%', padding: '10px 16px',
-                      background: arSelectedPoi?.key === key ? 'rgba(59,130,246,0.25)' : 'transparent',
-                      border: 'none', cursor: 'pointer',
-                      borderLeft: arSelectedPoi?.key === key ? '3px solid #3b82f6' : '3px solid transparent',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => { if (arSelectedPoi?.key !== key) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-                    onMouseLeave={e => { if (arSelectedPoi?.key !== key) e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <div style={{
-                      width: '28px', height: '28px', borderRadius: '50%',
-                      background: 'rgba(59,130,246,0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <MapPin size={14} color="#60a5fa" />
-                    </div>
-                    <div style={{ textAlign: 'left' }}>
-                      <p style={{ color: '#f1f5f9', fontSize: '12px', fontWeight: '600', margin: 0 }}>{data.title}</p>
-                      <p style={{ color: '#64748b', fontSize: '10px', margin: '2px 0 0' }}>{data.category}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Toggle sidebar button */}
-          <button
-            onClick={() => setArSidebarOpen(v => !v)}
-            style={{
-              position: 'absolute', top: '50%', left: arSidebarOpen ? '220px' : '0',
-              transform: 'translateY(-50%)',
-              background: 'rgba(15,23,42,0.85)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderLeft: 'none',
-              borderRadius: '0 8px 8px 0',
-              padding: '10px 6px',
-              cursor: 'pointer',
-              pointerEvents: 'all',
-              transition: 'left 0.2s',
-            }}
-          >
-            <List size={16} color="#94a3b8" />
-          </button>
-
-          {/* Detail card dusun yang dipilih di AR */}
-          {arSelectedPoi && (
-            <div style={{
-              position: 'absolute',
-              right: '16px', top: '50%', transform: 'translateY(-50%)',
-              width: '280px',
-              background: 'rgba(255,255,255,0.97)',
-              borderRadius: '20px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              overflow: 'hidden',
-              pointerEvents: 'all',
-            }}>
-              {/* Image */}
-              <div style={{ height: '140px', backgroundImage: `url(${arSelectedPoi.image})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                <button
-                  onClick={() => setArSelectedPoi(null)}
-                  style={{
-                    position: 'absolute', top: '10px', right: '10px',
-                    width: '32px', height: '32px',
-                    background: 'rgba(255,255,255,0.3)',
-                    backdropFilter: 'blur(8px)',
-                    border: 'none', borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <X size={16} color="white" />
-                </button>
-              </div>
-              {/* Content */}
-              <div style={{ padding: '16px' }}>
-                <p style={{ color: '#3b82f6', fontSize: '11px', fontWeight: '700', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{arSelectedPoi.category}</p>
-                <h3 style={{ color: '#0f172a', fontSize: '16px', fontWeight: '800', margin: '0 0 8px' }}>{arSelectedPoi.title}</h3>
-                <p style={{ color: '#475569', fontSize: '12px', lineHeight: 1.6, margin: '0 0 12px' }}>{arSelectedPoi.shortDesc}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Clock size={12} color="#94a3b8" />
-                  <span style={{ color: '#64748b', fontSize: '11px' }}>{arSelectedPoi.hours}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </main>
   );
 };
