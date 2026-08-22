@@ -74,7 +74,7 @@ const poiData = {
       "Tubing Genting menawarkan pengalaman wisata air susur sungai yang seru menggunakan ban dalam (tube). Jalur tubing ini melintasi sungai dengan air yang jernih dan arus yang bervariasi, sangat cocok untuk menguji adrenalin Anda.",
       "Selama pengarungan, pengunjung akan dimanjakan dengan pemandangan tebing sungai yang eksotis, pepohonan rindang, dan suasana alam yang masih sangat alami.",
       "Keamanan pengunjung terjamin dengan adanya pemandu lokal yang berpengalaman serta fasilitas perlengkapan standar seperti helm dan pelampung. Fasilitas bilas dan warung makan juga tersedia di sekitar area finish."
-    ],  
+    ],
     image: genting
   },
   "Poin.001": {
@@ -351,7 +351,7 @@ const MainContent = () => {
 
   return (
     <main className="grow relative bg-slate-900 overflow-hidden flex justify-center items-center pt-14 md:pt-0 pb-20 md:pb-0">
-      
+
       {/* 3D Model Viewer Modal for Desktop / Non-AR Fallback */}
       {showDesktopViewer && (
         <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-xl flex flex-col items-center justify-center">
@@ -366,8 +366,9 @@ const MainContent = () => {
             <model-viewer
               ref={modelViewerRef}
               src="/mapsgardu.glb"
+              ios-src="/mapsgardu.usdz"
               ar
-              ar-modes="webxr quick-look"
+              ar-modes="quick-look webxr scene-viewer"
               camera-controls
               auto-rotate
               rotation-per-second="30deg"
@@ -425,10 +426,10 @@ const MainContent = () => {
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                       {/* Menu Button */}
-                      <button 
+                      <button
                         onClick={() => {
                           const menu = document.getElementById('ar-dropdown-menu');
-                          if(menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+                          if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
                         }}
                         style={{
                           width: '40px', height: '40px',
@@ -442,7 +443,7 @@ const MainContent = () => {
                       >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                       </button>
-                      
+
                       <h1 style={{ color: '#ffffff', fontSize: '17px', fontWeight: '600', margin: 0, letterSpacing: '0.3px' }}>AR Peta Getas</h1>
                     </div>
                   </div>
@@ -463,9 +464,9 @@ const MainContent = () => {
                     minWidth: '150px',
                     boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
                   }}>
-                    <button 
-                      onClick={() => { 
-                        setArShowGuide(true); setArShowAbout(false); 
+                    <button
+                      onClick={() => {
+                        setArShowGuide(true); setArShowAbout(false);
                         document.getElementById('ar-dropdown-menu').style.display = 'none';
                       }}
                       style={{
@@ -487,10 +488,10 @@ const MainContent = () => {
                       <HelpCircle size={18} />
                       Panduan
                     </button>
-                    
-                    <button 
-                      onClick={() => { 
-                        setArShowAbout(true); setArShowGuide(false); 
+
+                    <button
+                      onClick={() => {
+                        setArShowAbout(true); setArShowGuide(false);
                         document.getElementById('ar-dropdown-menu').style.display = 'none';
                       }}
                       style={{
@@ -519,8 +520,8 @@ const MainContent = () => {
                     <div style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'rgba(15,23,42,0.6)',
-                      backdropFilter: 'blur(8px)',
+                      background: 'rgba(15,23,42,0.3)',
+                      backdropFilter: 'blur(12px)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -530,63 +531,63 @@ const MainContent = () => {
                     }}>
                       <div className="animate-in fade-in zoom-in-95 duration-200" style={{
                         background: 'white',
-                        borderRadius: '24px',
-                        width: '95%',
+                        borderRadius: '28px',
+                        width: '92%',
                         maxWidth: '400px',
-                        padding: '24px',
-                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        padding: '32px 28px',
+                        boxShadow: '0 24px 40px -8px rgba(0,0,0,0.15)',
                         position: 'relative'
                       }}>
                         <button
                           onClick={() => setArShowGuide(false)}
                           style={{
-                            position: 'absolute', top: '16px', right: '16px',
+                            position: 'absolute', top: '20px', right: '20px',
                             width: '32px', height: '32px',
-                            background: '#f1f5f9', border: 'none', borderRadius: '50%',
+                            background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '50%',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer'
                           }}
                         >
-                          <X size={16} color="#475569" />
+                          <X size={16} color="#64748b" />
                         </button>
-                        
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <HelpCircle size={20} color="#3b82f6" />
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+                          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(59,130,246,0.1)' }}>
+                            <HelpCircle size={22} color="#3b82f6" />
                           </div>
-                          <h3 style={{ fontSize: '18px', fontWeight: '850', color: '#0f172a', margin: 0 }}>Cara Penggunaan AR</h3>
+                          <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>Cara Penggunaan AR</h3>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', color: '#334155', fontSize: '13px', lineHeight: '1.5' }}>
-                          <div style={{ display: 'flex', gap: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>1</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', color: '#334155' }}>
+                          <div style={{ display: 'flex', gap: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', fontWeight: '600', fontSize: '12px', flexShrink: 0, boxShadow: '0 4px 8px rgba(59,130,246,0.25)' }}>1</div>
                             <div>
-                              <strong style={{ color: '#0f172a' }}>Pindai Permukaan</strong>
-                              <p style={{ margin: '2px 0 0', color: '#64748b' }}>Arahkan kamera ke permukaan yang datar (lantai/meja) secara perlahan sampai grid deteksi muncul.</p>
+                              <strong style={{ color: '#0f172a', fontSize: '14px', letterSpacing: '-0.2px' }}>Pindai Permukaan</strong>
+                              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13px', lineHeight: '1.6' }}>Arahkan kamera ke permukaan yang datar (lantai/meja) secara perlahan sampai grid deteksi muncul.</p>
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', gap: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>2</div>
+                          <div style={{ display: 'flex', gap: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', fontWeight: '600', fontSize: '12px', flexShrink: 0, boxShadow: '0 4px 8px rgba(59,130,246,0.25)' }}>2</div>
                             <div>
-                              <strong style={{ color: '#0f172a' }}>Letakkan Peta 3D</strong>
-                              <p style={{ margin: '2px 0 0', color: '#64748b' }}>Ketuk pada layar gawai Anda untuk memproyeksikan model 3D Peta Desa Getas ke dunia nyata.</p>
+                              <strong style={{ color: '#0f172a', fontSize: '14px', letterSpacing: '-0.2px' }}>Letakkan Peta 3D</strong>
+                              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13px', lineHeight: '1.6' }}>Ketuk pada layar gawai Anda untuk memproyeksikan model 3D Peta Desa Getas ke dunia nyata.</p>
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', gap: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>3</div>
+                          <div style={{ display: 'flex', gap: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', fontWeight: '600', fontSize: '12px', flexShrink: 0, boxShadow: '0 4px 8px rgba(59,130,246,0.25)' }}>3</div>
                             <div>
-                              <strong style={{ color: '#0f172a' }}>Interaksi & Navigasi</strong>
-                              <p style={{ margin: '2px 0 0', color: '#64748b' }}>Gunakan 1 jari untuk memutar peta, 2 jari untuk menggeser posisi, dan cubit layar (pinch) untuk zoom.</p>
+                              <strong style={{ color: '#0f172a', fontSize: '14px', letterSpacing: '-0.2px' }}>Interaksi & Navigasi</strong>
+                              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13px', lineHeight: '1.6' }}>Gunakan 1 jari untuk memutar peta, 2 jari untuk menggeser posisi, dan cubit layar (pinch) untuk zoom.</p>
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', gap: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>4</div>
+                          <div style={{ display: 'flex', gap: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', fontWeight: '600', fontSize: '12px', flexShrink: 0, boxShadow: '0 4px 8px rgba(59,130,246,0.25)' }}>4</div>
                             <div>
-                              <strong style={{ color: '#0f172a' }}>Informasi Dusun</strong>
-                              <p style={{ margin: '2px 0 0', color: '#64748b' }}>Ketuk pin lokasi berwarna biru di atas peta untuk memunculkan ringkasan informasi dan penjelasan dusun.</p>
+                              <strong style={{ color: '#0f172a', fontSize: '14px', letterSpacing: '-0.2px' }}>Informasi Dusun</strong>
+                              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13px', lineHeight: '1.6' }}>Ketuk objek 3d di atas peta untuk memunculkan ringkasan informasi dan penjelasan dusun.</p>
                             </div>
                           </div>
                         </div>
@@ -599,8 +600,8 @@ const MainContent = () => {
                     <div style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'rgba(15,23,42,0.6)',
-                      backdropFilter: 'blur(8px)',
+                      background: 'rgba(15,23,42,0.3)',
+                      backdropFilter: 'blur(12px)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -610,44 +611,50 @@ const MainContent = () => {
                     }}>
                       <div className="animate-in fade-in zoom-in-95 duration-200" style={{
                         background: 'white',
-                        borderRadius: '24px',
-                        width: '95%',
+                        borderRadius: '28px',
+                        width: '92%',
                         maxWidth: '400px',
-                        padding: '24px',
-                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        padding: '32px 28px',
+                        boxShadow: '0 24px 40px -8px rgba(0,0,0,0.15)',
                         position: 'relative'
                       }}>
                         <button
                           onClick={() => setArShowAbout(false)}
                           style={{
-                            position: 'absolute', top: '16px', right: '16px',
+                            position: 'absolute', top: '20px', right: '20px',
                             width: '32px', height: '32px',
-                            background: '#f1f5f9', border: 'none', borderRadius: '50%',
+                            background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '50%',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer'
                           }}
                         >
-                          <X size={16} color="#475569" />
+                          <X size={16} color="#64748b" />
                         </button>
-                        
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Info size={20} color="#3b82f6" />
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+                          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(59,130,246,0.1)' }}>
+                            <Info size={22} color="#3b82f6" />
                           </div>
-                          <h3 style={{ fontSize: '18px', fontWeight: '850', color: '#0f172a', margin: 0 }}>Tentang Aplikasi</h3>
+                          <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>Tentang Aplikasi</h3>
                         </div>
 
-                        <div style={{ color: '#475569', fontSize: '13px', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <p style={{ margin: 0 }}>
-                            <strong style={{ color: '#0f172a' }}>Getas AR Peta Desa</strong> adalah aplikasi visualisasi berbasis teknologi <span style={{ color: '#3b82f6', fontWeight: '600' }}>Augmented Reality (AR)</span> yang memetakan batas wilayah, administrasi, dan potensi penting dari setiap dusun di Desa Getas.
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <p style={{ margin: 0, color: '#475569', fontSize: '13.5px', lineHeight: '1.6' }}>
+                            <strong style={{ color: '#0f172a' }}>Getas AR </strong> adalah aplikasi visualisasi berbasis teknologi <span style={{ color: '#3b82f6', fontWeight: '600' }}>Augmented Reality (AR)</span> yang memetakan batas wilayah, administrasi, dan potensi penting dari setiap dusun di Desa Getas.
                           </p>
-                          <p style={{ margin: 0 }}>
+                          <p style={{ margin: 0, color: '#475569', fontSize: '13.5px', lineHeight: '1.6' }}>
                             Melalui pemetaan interaktif ini, pengunjung maupun warga desa dapat menjelajahi lanskap geografis desa secara mendalam langsung dari web browser tanpa instalasi aplikasi tambahan.
                           </p>
-                          <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginTop: '4px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '11px', color: '#64748b' }}>
-                              <p style={{ margin: '0 0 2px' }}><span style={{ fontWeight: '600', color: '#475569' }}>Karya:</span> Tim PPK Ormawa Getas</p>
-                              <p style={{ margin: 0 }}><span style={{ fontWeight: '600', color: '#475569' }}>Versi:</span> 1.2.0 (WebXR)</p>
+                          <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', marginTop: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontWeight: '600', color: '#475569' }}>Karya</span>
+                                <span> PPK ORMAWA BEM FIK UDINUS </span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontWeight: '600', color: '#475569' }}>Versi</span>
+                                <span>1.0.0 (WebXR)</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -695,13 +702,13 @@ const MainContent = () => {
                             <p style={{ color: '#3b82f6', fontSize: '13px', fontWeight: '600', margin: 0 }}>{arSelectedPoi.category}</p>
                           </div>
                         </div>
-                        
+
                         <p style={{ color: '#475569', fontSize: '13px', lineHeight: 1.5, margin: '0 0 16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {arSelectedPoi.shortDesc}
                         </p>
-                        
+
                         <div style={{ display: 'flex', gap: '12px' }}>
-                          <button 
+                          <button
                             onClick={() => {
                               setSelectedPoi(arSelectedPoi); // ensure modal gets correct data
                               setShowLongDetail(true);
@@ -717,7 +724,7 @@ const MainContent = () => {
                           >
                             Lihat Detail
                           </button>
-                          <button 
+                          <button
                             onClick={() => setArSelectedPoi(null)}
                             style={{
                               flex: 1,

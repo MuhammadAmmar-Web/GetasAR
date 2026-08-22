@@ -18,19 +18,47 @@ function Model({ onMarkerClick, onCoordinatesLoaded }) {
   });
 
   const resolvePoiKey = (object) => {
+    // Pass 1: Strict hierarchy check
     let node = object;
     while (node) {
       if (node.name) {
         if (node.name.includes('Pendopo')) return 'Pendopo';
+        
+        const lowerName = node.name.toLowerCase();
+        if (lowerName.includes('kambng') || lowerName.includes('kambing')) return 'Poin.006';
+        if (
+          lowerName.includes('gula aren') || 
+          lowerName.includes('kolangkaling') || 
+          lowerName.includes('148acc43')
+        ) return 'Poin.007';
+
         const match = node.name.match(/Poin.*?(\d+)/);
         if (match) {
-          // Normalise ke format "Poin.001", "Poin.002", dst.
           const num = parseInt(match[1], 10);
           return `Poin.${String(num).padStart(3, '0')}`;
         }
       }
       node = node.parent;
     }
+
+    // Pass 2: Fallback for unparented meshes of Gula Aren
+    node = object;
+    while (node) {
+      if (node.name) {
+        const lowerName = node.name.toLowerCase();
+        if (
+          lowerName.includes('cube') ||
+          lowerName.includes('cylinder') ||
+          lowerName.includes('text') ||
+          lowerName.includes('world') ||
+          lowerName.includes('geometry')
+        ) {
+          return 'Poin.007';
+        }
+      }
+      node = node.parent;
+    }
+
     return null;
   };
 
