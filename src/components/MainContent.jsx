@@ -10,6 +10,11 @@ import { OrbitControls, Environment, Html, useProgress, Lightformer } from '@rea
 import logoppko from '../assets/logoppko.png';
 import genting from '../assets/genting.jpg';
 import truko from '../assets/truko.jpg';
+import bleder from '../assets/Bleder.jpg';
+import getas from '../assets/Getas.jpg';
+import mambang from '../assets/Mambang.jpg';
+import seklotok from '../assets/Sekolotok.jpg';
+import jolinggo from '../assets/Jolinggo.jpg';
 
 // Lazy import di MODULE SCOPE — mencegah model reload saat state berubah
 const LazyModel = lazy(() => import('./ModelComponent'));
@@ -111,7 +116,7 @@ const poiData = {
       "Dusun Bleder adalah representasi kawasan hijau di Desa Getas. Wilayah ini didominasi oleh area perkebunan yang rimbun, memberikan suasana yang sejuk, tenang, serta udara yang sangat segar bebas polusi.",
       "Masyarakat Dusun Bleder mengelola berbagai tanaman perkebunan yang menjadi sumber penghidupan utama, sekaligus bertindak sebagai penjaga keseimbangan ekosistem alam di sekitar tempat tinggal mereka."
     ],
-    image: "https://images.unsplash.com/photo-1586521995568-39abaa0c2311?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: bleder
   },
   "Poin.004": {
     title: "Dusun Sanggar",
@@ -135,7 +140,7 @@ const poiData = {
       "Sebagai induk pemerintahan, Dusun Getas menjadi pusat administrasi dan kegiatan kemasyarakatan dari seluruh wilayah desa. Fasilitas-fasilitas utama desa sebagian besar terpusat di kawasan ini.",
       "Selain peran administratifnya yang penting, Dusun Getas juga sangat terkenal sebagai basis penghasil madu hutan alami. Para pencari madu mengumpulkan madu murni dari kawasan hutan sekitar yang dipercaya memiliki khasiat tinggi bagi kesehatan."
     ],
-    image: "https://images.unsplash.com/photo-1587049352847-81a56d773c1c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: getas
   },
   "Poin.006": {
     title: "Dusun Truko",
@@ -159,7 +164,7 @@ const poiData = {
       "Dusun Jolinggo merupakan sentra utama pengolahan dan penghasil kolang kaling di wilayah ini. Memanfaatkan melimpahnya pohon aren di sekitar dusun, masyarakat mengolah buah aren menjadi kolang kaling bernilai ekonomis tinggi.",
       "Proses pengolahan kolang kaling di Dusun Jolinggo masih banyak dilakukan dengan cara tradisional untuk mempertahankan kualitas, tekstur, dan cita rasa alami yang menjadikannya sebagai komoditas unggulan."
     ],
-    image: "https://images.unsplash.com/photo-1605557202138-7d8b51d5c317?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: jolinggo
   },
   "Poin.008": {
     title: "Dusun Mambang",
@@ -171,7 +176,7 @@ const poiData = {
       "Dusun Mambang dikenal sebagai wilayah yang kaya akan catatan Sejarah Pertanian dan perkembangan Islam. Jejak-jejak penyebaran agama di dusun ini berakulturasi dengan budaya agraris masyarakat setempat secara harmonis.",
       "Pertanian di Dusun Mambang bukan hanya sekadar mata pencaharian, tetapi juga bagian dari nilai-nilai filosofis kehidupan masyarakat yang terus dijaga kelestariannya secara turun-temurun."
     ],
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: mambang
   },
   "Poin.009": {
     title: "Dusun Skolotok",
@@ -183,7 +188,7 @@ const poiData = {
       "Dusun Skolotok memiliki keunikan yang kuat pada nilai-nilai sejarah dan religius masyarakatnya. Salah satu tradisi yang masih sangat dilestarikan adalah tradisi Takir.",
       "Tradisi ini merupakan warisan leluhur yang sarat akan makna spiritual dan kebersamaan warga. Dalam setiap acara adat atau keagamaan, warga saling bahu membahu menyiapkan wadah takir, yang menjadi simbol rasa syukur dan kerukunan antar sesama."
     ],
-    image: "https://images.unsplash.com/photo-1542314831-c6a4d14eb8a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: seklotok
   }
 };
 
@@ -244,12 +249,23 @@ const MainContent = () => {
         target.skyboxImage = '/forest360.jpg';
       }
     };
+    // Deteksi iOS — Quick Look native tidak mendukung hotspot interaktif
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
     // Aktifkan AR otomatis di mobile setelah model selesai dimuat
     const handleLoad = () => {
       if (pendingARRef.current) {
         pendingARRef.current = false;
+
+        // iOS: langsung tampilkan 3D viewer + hotspot (Quick Look tidak support overlay)
+        if (isIOS) {
+          setArFallback(true);
+          enableSkybox(mv);
+          return;
+        }
+
         if (!mv.canActivateAR) {
-          // Device tanpa ARCore/ARKit: jangan panggil AR, tampilkan viewer 3D saja
+          // Device tanpa ARCore/ARKit: tampilkan viewer 3D saja
           setArFallback(true);
           enableSkybox(mv);
           return;
@@ -365,10 +381,9 @@ const MainContent = () => {
           <div className="w-full h-full md:w-[90vw] md:h-[85vh] md:rounded-3xl overflow-hidden shadow-2xl relative">
             <model-viewer
               ref={modelViewerRef}
-              src="/mapsgardu.glb"
-              ios-src="/mapsgardu.usdz"
+              src="/mapsgardu_ios.glb"
               ar
-              ar-modes="quick-look webxr scene-viewer"
+              ar-modes="webxr scene-viewer quick-look"
               camera-controls
               auto-rotate
               rotation-per-second="30deg"
@@ -399,8 +414,8 @@ const MainContent = () => {
                 </button>
               ))}
 
-              {/* ===== AR OVERLAY ===== */}
-              {isARActive && (
+              {/* ===== AR / FALLBACK OVERLAY ===== */}
+              {(isARActive || arFallback) && (
                 <div style={{
                   position: 'fixed', inset: 0, zIndex: 9999,
                   pointerEvents: 'none',
@@ -748,19 +763,12 @@ const MainContent = () => {
             </model-viewer>
           </div>
 
+          {!arFallback && (
           <div className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 shadow-lg flex items-center gap-3">
-            {arFallback ? (
-              <>
-                <MonitorPlay size={18} className="text-amber-400" />
-                <span className="text-white text-sm font-medium tracking-wide">AR tidak didukung perangkat ini — menampilkan tampilan 3D</span>
-              </>
-            ) : (
-              <>
                 <MonitorPlay size={18} className="text-blue-400" />
-                <span className="text-white text-sm font-medium tracking-wide">3D Viewer Interaktif Laptop</span>
-              </>
-            )}
+                <span className="text-white text-sm font-medium tracking-wide">3D Viewer Interaktif</span>
           </div>
+          )}
         </div>
       )}
 
