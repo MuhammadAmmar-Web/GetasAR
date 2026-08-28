@@ -1,333 +1,192 @@
 /**
- * fix-ios-glb.cjs
+ * fix-negative-scale.cjs
  *
- * Comprehensive fix for iOS AR compatibility:
- * 1. Bake negative scale into geometry
- * 2. Flatten kambing hierarchy (bake all transforms into vertex data)
- * 3. Flatten FBX (gula aren) hierarchy
- * 4. Remove KHR_materials_unlit
+ * Converts mapsgardu.glb to mapsgardu_ios.glb for iOS AR / Quick Look / Scene Viewer compatibility:
+ * 1. Decompresses Draco mesh compression (if present) to standard glTF buffers.
+ * 2. Bakes negative scale into vertex positions, normals, and inverts triangle winding order.
+ * 3. Converts WebP textures to standard PNG (with alpha) or JPEG (without alpha) for universal iOS compatibility.
+ * 4. Removes KHR_materials_unlit and ensures standard PBR metallic-roughness.
+ * 5. Removes vendor extensions not supported by iOS Quick Look.
  */
 
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
+const { NodeIO } = require('@gltf-transform/core');
+const {
+  KHRDracoMeshCompression,
+  EXTTextureWebP,
+  KHRMaterialsUnlit,
+  KHRTextureBasisu,
+  EXTMeshoptCompression
+} = require('@gltf-transform/extensions');
+const { prune, dedup } = require('@gltf-transform/functions');
+const draco3d = require('draco3dgltf');
 
-const INPUT_GLB  = path.resolve(__dirname, '../public/mapsgardu.glb');
+const INPUT_GLB = path.resolve(__dirname, '../public/mapsgardu.glb');
 const OUTPUT_GLB = path.resolve(__dirname, '../public/mapsgardu_ios.glb');
 
-// ─── GLB parsing ──────────────────────────────────────────────
-function parseGLB(buf) {
-  if (buf.readUInt32LE(0) !== 0x46546C67) throw new Error('Not GLB');
-  const version = buf.readUInt32LE(4);
-  const jsonLength = buf.readUInt32LE(12);
-  const gltf = JSON.parse(buf.toString('utf8', 20, 20 + jsonLength));
-  const binOff = 20 + jsonLength;
-  const binLen = buf.readUInt32LE(binOff);
-  const binData = Buffer.from(buf.slice(binOff + 8, binOff + 8 + binLen));
-  return { gltf, binData, version };
-}
-
-function writeGLB(gltf, binData, version) {
-  let jb = Buffer.from(JSON.stringify(gltf), 'utf8');
-  const jp = (4 - (jb.length % 4)) % 4;
-  if (jp > 0) jb = Buffer.concat([jb, Buffer.alloc(jp, 0x20)]);
-  const bp = (4 - (binData.length % 4)) % 4;
-  const bd = bp > 0 ? Buffer.concat([binData, Buffer.alloc(bp, 0x00)]) : binData;
-  const total = 12 + 8 + jb.length + 8 + bd.length;
-  const out = Buffer.alloc(total);
-  let o = 0;
-  out.writeUInt32LE(0x46546C67, o); o += 4;
-  out.writeUInt32LE(version, o); o += 4;
-  out.writeUInt32LE(total, o); o += 4;
-  out.writeUInt32LE(jb.length, o); o += 4;
-  out.writeUInt32LE(0x4E4F534A, o); o += 4;
-  jb.copy(out, o); o += jb.length;
-  out.writeUInt32LE(bd.length, o); o += 4;
-  out.writeUInt32LE(0x004E4942, o); o += 4;
-  bd.copy(out, o);
-  return out;
-}
-
-// ─── Accessor helpers ─────────────────────────────────────────
-const COMP = { SCALAR:1, VEC2:2, VEC3:3, VEC4:4, MAT4:16 };
-
-function readAcc(gltf, bin, idx) {
-  const a = gltf.accessors[idx], bv = gltf.bufferViews[a.bufferView];
-  const off = (bv.byteOffset||0)+(a.byteOffset||0);
-  const cc = COMP[a.type], stride = bv.byteStride || (cc*4);
-  const data = [];
-  for (let i=0; i<a.count; i++) {
-    const s = off + i*stride, t = [];
-    for (let c=0; c<cc; c++) t.push(bin.readFloatLE(s+c*4));
-    data.push(t);
+async function main() {
+  console.log('📂 Reading input model:', INPUT_GLB);
+  if (!fs.existsSync(INPUT_GLB)) {
+    throw new Error(`Input file not found: ${INPUT_GLB}`);
   }
-  return data;
-}
+  const inputStat = fs.statSync(INPUT_GLB);
+  console.log(`   File size: ${(inputStat.size / 1024).toFixed(1)} KB`);
 
-function writeAcc(gltf, bin, idx, data) {
-  const a = gltf.accessors[idx], bv = gltf.bufferViews[a.bufferView];
-  const off = (bv.byteOffset||0)+(a.byteOffset||0);
-  const cc = COMP[a.type], stride = bv.byteStride || (cc*4);
-  for (let i=0; i<a.count; i++) {
-    const s = off + i*stride;
-    for (let c=0; c<cc; c++) bin.writeFloatLE(data[i][c], s+c*4);
-  }
-  if (a.min && a.max) {
-    const min = Array(cc).fill(Infinity), max = Array(cc).fill(-Infinity);
-    for (const t of data) for (let c=0; c<cc; c++) { if(t[c]<min[c])min[c]=t[c]; if(t[c]>max[c])max[c]=t[c]; }
-    a.min = min; a.max = max;
-  }
-}
+  // 1. Initialize NodeIO with decoder modules
+  const io = new NodeIO()
+    .registerExtensions([
+      KHRDracoMeshCompression,
+      EXTTextureWebP,
+      KHRMaterialsUnlit,
+      KHRTextureBasisu,
+      EXTMeshoptCompression
+    ])
+    .registerDependencies({
+      'draco3d.decoder': await draco3d.createDecoderModule(),
+      'draco3d.encoder': await draco3d.createEncoderModule()
+    });
 
-function readIdx(gltf, bin, idx) {
-  const a = gltf.accessors[idx], bv = gltf.bufferViews[a.bufferView];
-  const off = (bv.byteOffset||0)+(a.byteOffset||0), r = [];
-  for (let i=0; i<a.count; i++) r.push(a.componentType===5123 ? bin.readUInt16LE(off+i*2) : bin.readUInt32LE(off+i*4));
-  return r;
-}
+  const doc = await io.read(INPUT_GLB);
+  const root = doc.getRoot();
 
-function writeIdx(gltf, bin, idx, data) {
-  const a = gltf.accessors[idx], bv = gltf.bufferViews[a.bufferView];
-  const off = (bv.byteOffset||0)+(a.byteOffset||0);
-  for (let i=0; i<data.length; i++) {
-    if (a.componentType===5123) bin.writeUInt16LE(data[i],off+i*2);
-    else bin.writeUInt32LE(data[i],off+i*4);
-  }
-}
+  console.log(`   Nodes: ${root.listNodes().length}, Meshes: ${root.listMeshes().length}, Materials: ${root.listMaterials().length}, Textures: ${root.listTextures().length}\n`);
 
-// ─── 3D math ─────────────────────────────────────────────────
-function quatMul(a, b) {
-  return [
-    a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],
-    a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],
-    a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],
-    a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2],
-  ];
-}
+  // 2. Bake negative scale into geometry
+  console.log('══ STEP 1: Bake negative scale into geometry ══');
+  let fixedCount = 0;
+  for (const node of root.listNodes()) {
+    const scale = node.getScale();
+    if (!scale || !scale.some(s => s < 0)) continue;
 
-function quatRot(q, v) {
-  const [qx,qy,qz,qw] = q, [vx,vy,vz] = v;
-  const tx=2*(qy*vz-qz*vy), ty=2*(qz*vx-qx*vz), tz=2*(qx*vy-qy*vx);
-  return [vx+qw*tx+(qy*tz-qz*ty), vy+qw*ty+(qz*tx-qx*tz), vz+qw*tz+(qx*ty-qy*tx)];
-}
+    const sx = Math.sign(scale[0]);
+    const sy = Math.sign(scale[1]);
+    const sz = Math.sign(scale[2]);
+    const det = sx * sy * sz;
 
-/**
- * Compute cumulative TRS from root node down to (but not including) a target mesh node.
- * Returns { translation, rotation, scale } accumulated along the path.
- */
-function getWorldTransform(gltf, rootIdx, targetIdx) {
-  const path = [];
-  function dfs(idx, cur) {
-    cur.push(idx);
-    if (idx === targetIdx) { path.push(...cur); return true; }
-    const n = gltf.nodes[idx];
-    if (n.children) for (const c of n.children) if (dfs(c, cur)) return true;
-    cur.pop();
-    return false;
-  }
-  dfs(rootIdx, []);
-
-  // Accumulate transforms for all nodes in path EXCEPT the target (the mesh node)
-  let t = [0,0,0], r = [0,0,0,1], s = [1,1,1];
-  
-  for (const idx of path) {
-    const n = gltf.nodes[idx];
-    // Apply: first scale, then rotate, then translate
-    // New position = parentRot * (parentScale * childT) + parentT
-    const nt = n.translation || [0,0,0];
-    const nr = n.rotation || [0,0,0,1];
-    const ns = n.scale || [1,1,1];
-
-    // Scale the translation by parent scale, rotate by parent rotation, add parent translation
-    const scaledT = [nt[0]*s[0], nt[1]*s[1], nt[2]*s[2]];
-    const rotatedT = quatRot(r, scaledT);
-    t = [t[0]+rotatedT[0], t[1]+rotatedT[1], t[2]+rotatedT[2]];
-
-    // Accumulate rotation
-    r = quatMul(r, nr);
-
-    // Accumulate scale
-    s = [s[0]*ns[0], s[1]*ns[1], s[2]*ns[2]];
-  }
-
-  return { translation: t, rotation: r, scale: s };
-}
-
-/**
- * Apply a full TRS transform to a mesh's geometry.
- */
-function bakeMeshTransform(gltf, binData, meshIdx, transform) {
-  const { translation: t, rotation: r, scale: s } = transform;
-  const mesh = gltf.meshes[meshIdx];
-  const det = s[0]*s[1]*s[2];
-  
-  for (const prim of mesh.primitives) {
-    if (prim.attributes.POSITION !== undefined) {
-      const data = readAcc(gltf, binData, prim.attributes.POSITION);
-      for (const p of data) {
-        // Apply: scale → rotate → translate
-        const scaled = [p[0]*s[0], p[1]*s[1], p[2]*s[2]];
-        const rotated = quatRot(r, scaled);
-        p[0] = rotated[0] + t[0];
-        p[1] = rotated[1] + t[1];
-        p[2] = rotated[2] + t[2];
-      }
-      writeAcc(gltf, binData, prim.attributes.POSITION, data);
-    }
-    if (prim.attributes.NORMAL !== undefined) {
-      const data = readAcc(gltf, binData, prim.attributes.NORMAL);
-      for (const n of data) {
-        // Normals: apply scale sign + rotate (no translate)
-        const sn = [n[0]*Math.sign(s[0]), n[1]*Math.sign(s[1]), n[2]*Math.sign(s[2])];
-        const rotated = quatRot(r, sn);
-        // Renormalize
-        const len = Math.sqrt(rotated[0]**2+rotated[1]**2+rotated[2]**2) || 1;
-        n[0] = rotated[0]/len; n[1] = rotated[1]/len; n[2] = rotated[2]/len;
-      }
-      writeAcc(gltf, binData, prim.attributes.NORMAL, data);
-    }
-    // Flip winding if determinant < 0
-    if (det < 0 && prim.indices !== undefined) {
-      const idx = readIdx(gltf, binData, prim.indices);
-      for (let i=0; i<idx.length-2; i+=3) { const tmp=idx[i+1]; idx[i+1]=idx[i+2]; idx[i+2]=tmp; }
-      writeIdx(gltf, binData, prim.indices, idx);
-    }
-  }
-}
-
-/**
- * Find all mesh nodes in a subtree.
- */
-function collectMeshNodes(gltf, nodeIdx) {
-  const result = [];
-  const n = gltf.nodes[nodeIdx];
-  if (n.mesh !== undefined) result.push(nodeIdx);
-  if (n.children) for (const c of n.children) result.push(...collectMeshNodes(gltf, c));
-  return result;
-}
-
-// ─── Main ─────────────────────────────────────────────────────
-function main() {
-  console.log('📂 Reading:', INPUT_GLB);
-  const buf = fs.readFileSync(INPUT_GLB);
-  const { gltf, binData, version } = parseGLB(buf);
-
-  console.log(`   ${gltf.nodes.length} nodes, ${gltf.meshes.length} meshes, ${gltf.materials.length} materials\n`);
-
-  // ═══ STEP 1: Fix negative scale nodes (with direct mesh) ═══
-  console.log('══ STEP 1: Fix negative scale ══');
-  gltf.nodes.forEach((node, i) => {
-    if (!node.scale || !node.scale.some(s => s < 0)) return;
-    const sx = Math.sign(node.scale[0]), sy = Math.sign(node.scale[1]), sz = Math.sign(node.scale[2]);
-    const det = sx*sy*sz;
-
-    if (node.mesh !== undefined) {
-      const mesh = gltf.meshes[node.mesh];
-      console.log(`   [${i}] "${node.name}" (${mesh.primitives.length} prims)`);
-      for (const prim of mesh.primitives) {
-        if (prim.attributes.POSITION !== undefined) {
-          const d = readAcc(gltf, binData, prim.attributes.POSITION);
-          for (const p of d) { p[0]*=sx; p[1]*=sy; p[2]*=sz; }
-          writeAcc(gltf, binData, prim.attributes.POSITION, d);
+    const mesh = node.getMesh();
+    if (mesh) {
+      console.log(`   Fixing node "${node.getName() || 'Unnamed'}" (scale: [${scale.map(v => v.toFixed(3))}])`);
+      for (const prim of mesh.listPrimitives()) {
+        const posAcc = prim.getAttribute('POSITION');
+        if (posAcc) {
+          const arr = posAcc.getArray();
+          for (let i = 0; i < arr.length; i += 3) {
+            arr[i] *= sx;
+            arr[i + 1] *= sy;
+            arr[i + 2] *= sz;
+          }
+          posAcc.setArray(arr);
         }
-        if (prim.attributes.NORMAL !== undefined) {
-          const d = readAcc(gltf, binData, prim.attributes.NORMAL);
-          for (const n of d) { n[0]*=sx; n[1]*=sy; n[2]*=sz; }
-          writeAcc(gltf, binData, prim.attributes.NORMAL, d);
+
+        const normAcc = prim.getAttribute('NORMAL');
+        if (normAcc) {
+          const arr = normAcc.getArray();
+          for (let i = 0; i < arr.length; i += 3) {
+            arr[i] *= sx;
+            arr[i + 1] *= sy;
+            arr[i + 2] *= sz;
+          }
+          normAcc.setArray(arr);
         }
-        if (det<0 && prim.indices!==undefined) {
-          const idx = readIdx(gltf, binData, prim.indices);
-          for (let t=0; t<idx.length-2; t+=3) { const tmp=idx[t+1]; idx[t+1]=idx[t+2]; idx[t+2]=tmp; }
-          writeIdx(gltf, binData, prim.indices, idx);
+
+        // If negative determinant, flip triangle winding order
+        const idxAcc = prim.getIndices();
+        if (det < 0 && idxAcc) {
+          const arr = idxAcc.getArray();
+          for (let i = 0; i < arr.length; i += 3) {
+            const tmp = arr[i + 1];
+            arr[i + 1] = arr[i + 2];
+            arr[i + 2] = tmp;
+          }
+          idxAcc.setArray(arr);
         }
       }
+      fixedCount++;
     }
-    node.scale = [Math.abs(node.scale[0]), Math.abs(node.scale[1]), Math.abs(node.scale[2])];
-  });
 
-  // ═══ STEP 2: Flatten kambing hierarchy ═══
-  console.log('\n══ STEP 2: Flatten kambing hierarchy ══');
-  const kambngIdx = gltf.nodes.findIndex(n => n.name === 'kambng');
-  if (kambngIdx >= 0) {
-    const meshNodes = collectMeshNodes(gltf, kambngIdx);
-    console.log(`   Root: node ${kambngIdx}, mesh nodes: [${meshNodes}]`);
-    
-    for (const mnIdx of meshNodes) {
-      const meshNode = gltf.nodes[mnIdx];
-      // Compute world transform from kambng root down to AND including this mesh node
-      const xform = getWorldTransform(gltf, kambngIdx, mnIdx);
-      console.log(`   Baking [${mnIdx}] "${meshNode.name}" T:[${xform.translation.map(v=>v.toFixed(3))}] S:[${xform.scale.map(v=>v.toFixed(3))}]`);
-      
-      bakeMeshTransform(gltf, binData, meshNode.mesh, xform);
-    }
-    
-    // Flatten: clear all transforms & children in subtree
-    const clearSubtree = (idx) => {
-      const n = gltf.nodes[idx];
-      delete n.translation; delete n.rotation; delete n.scale;
-      if (n.children) n.children.forEach(clearSubtree);
-    };
-    clearSubtree(kambngIdx);
-    
-    // Move mesh directly to kambng node and remove deep hierarchy
-    if (meshNodes.length > 0) {
-      const firstMeshNode = gltf.nodes[meshNodes[0]];
-      // Position is now baked into geometry — only keep world translation of root
-      console.log('   ✅ Kambing flattened');
+    // Set scale to positive values
+    node.setScale([Math.abs(scale[0]), Math.abs(scale[1]), Math.abs(scale[2])]);
+  }
+  console.log(`   ✅ Fixed ${fixedCount} mesh nodes with negative scale.\n`);
+
+  // 3. Convert WebP textures to standard PNG/JPEG
+  console.log('══ STEP 2: Convert WebP textures to PNG/JPEG ══');
+  const textures = root.listTextures();
+  for (const tex of textures) {
+    const mime = tex.getMimeType();
+    const rawImage = tex.getImage();
+    if (!rawImage || rawImage.length === 0) continue;
+
+    if (mime === 'image/webp' || !mime) {
+      const meta = await sharp(rawImage).metadata();
+      let convertedBuf;
+      let targetMime;
+
+      if (meta.hasAlpha) {
+        convertedBuf = await sharp(rawImage).png({ quality: 90 }).toBuffer();
+        targetMime = 'image/png';
+      } else {
+        convertedBuf = await sharp(rawImage).jpeg({ quality: 90 }).toBuffer();
+        targetMime = 'image/jpeg';
+      }
+
+      tex.setImage(convertedBuf);
+      tex.setMimeType(targetMime);
+      console.log(`   Converted "${tex.getName() || 'texture'}" from ${meta.format} to ${targetMime} (${(convertedBuf.length / 1024).toFixed(1)} KB)`);
     }
   }
+  console.log('   ✅ Textures converted.\n');
 
-  // ═══ STEP 3: Flatten FBX hierarchy (node 27 - gula aren container) ═══
-  console.log('\n══ STEP 3: Flatten FBX (148acc43) hierarchy ══');
-  const fbxIdx = gltf.nodes.findIndex(n => n.name && n.name.includes('148acc43'));
-  if (fbxIdx >= 0) {
-    const meshNodes = collectMeshNodes(gltf, fbxIdx);
-    console.log(`   Root: node ${fbxIdx}, mesh nodes: [${meshNodes}]`);
-    
-    for (const mnIdx of meshNodes) {
-      const meshNode = gltf.nodes[mnIdx];
-      const xform = getWorldTransform(gltf, fbxIdx, mnIdx);
-      console.log(`   Baking [${mnIdx}] "${meshNode.name}" T:[${xform.translation.map(v=>v.toFixed(3))}] S:[${xform.scale.map(v=>v.toFixed(3))}]`);
-      
-      bakeMeshTransform(gltf, binData, meshNode.mesh, xform);
-    }
-    
-    const clearSubtree = (idx) => {
-      const n = gltf.nodes[idx];
-      delete n.translation; delete n.rotation; delete n.scale;
-      if (n.children) n.children.forEach(clearSubtree);
-    };
-    clearSubtree(fbxIdx);
-    console.log('   ✅ FBX flattened');
-  }
-
-  // ═══ STEP 4: Remove KHR_materials_unlit ═══
-  console.log('\n══ STEP 4: Remove KHR_materials_unlit ══');
+  // 4. Clean up unlit materials
+  console.log('══ STEP 3: Ensure standard PBR materials ══');
   let unlitCount = 0;
-  for (const mat of gltf.materials) {
-    if (mat.extensions?.KHR_materials_unlit) {
-      delete mat.extensions.KHR_materials_unlit;
-      if (Object.keys(mat.extensions).length === 0) delete mat.extensions;
-      if (!mat.pbrMetallicRoughness) mat.pbrMetallicRoughness = {};
-      mat.pbrMetallicRoughness.roughnessFactor = 1.0;
-      mat.pbrMetallicRoughness.metallicFactor = 0.0;
+  for (const mat of root.listMaterials()) {
+    const unlitExt = mat.getExtension('KHR_materials_unlit');
+    if (unlitExt) {
+      mat.setExtension('KHR_materials_unlit', null);
+      if (mat.getRoughnessFactor() === undefined || mat.getRoughnessFactor() === null) {
+        mat.setRoughnessFactor(1.0);
+      }
+      if (mat.getMetallicFactor() === undefined || mat.getMetallicFactor() === null) {
+        mat.setMetallicFactor(0.0);
+      }
       unlitCount++;
     }
   }
-  const filterExt = (a) => (a||[]).filter(e => e !== 'KHR_materials_unlit');
-  gltf.extensionsUsed = filterExt(gltf.extensionsUsed);
-  gltf.extensionsRequired = filterExt(gltf.extensionsRequired);
-  if (gltf.extensionsUsed?.length === 0) delete gltf.extensionsUsed;
-  if (gltf.extensionsRequired?.length === 0) delete gltf.extensionsRequired;
-  console.log(`   Removed from ${unlitCount} materials`);
+  console.log(`   ✅ Processed ${unlitCount} unlit materials.\n`);
 
-  // ═══ STEP 5: Write ═══
-  if (gltf.buffers?.[0]) gltf.buffers[0].byteLength = binData.length;
-  
-  const outBuf = writeGLB(gltf, binData, version);
-  fs.writeFileSync(OUTPUT_GLB, outBuf);
-  console.log(`\n✅ Done! ${(buf.length/1048576).toFixed(1)}MB → ${(outBuf.length/1048576).toFixed(1)}MB`);
+  // 5. Remove unsupported extensions
+  console.log('══ STEP 4: Remove Draco & WebP extensions for iOS Quick Look ══');
+  const extensionsToDispose = ['KHR_draco_mesh_compression', 'EXT_texture_webp', 'KHR_materials_unlit'];
+  for (const ext of root.listExtensionsUsed()) {
+    if (extensionsToDispose.includes(ext.extensionName)) {
+      ext.dispose();
+    }
+  }
+  for (const ext of root.listExtensionsRequired()) {
+    if (extensionsToDispose.includes(ext.extensionName)) {
+      ext.dispose();
+    }
+  }
+
+  // Run dedup & prune to keep GLB lean
+  await doc.transform(prune(), dedup());
+
+  // 6. Write output binary
+  console.log('\n══ STEP 5: Writing iOS-compatible GLB ══');
+  const outputBuffer = await io.writeBinary(doc);
+  fs.writeFileSync(OUTPUT_GLB, outputBuffer);
+
+  console.log(`\n🎉 Successfully generated ${OUTPUT_GLB}`);
+  console.log(`   Input size : ${(inputStat.size / 1024).toFixed(1)} KB`);
+  console.log(`   Output size: ${(outputBuffer.length / 1024 / 1024).toFixed(2)} MB`);
 }
 
-main();
+main().catch(err => {
+  console.error('❌ Error processing GLB:', err);
+  process.exit(1);
+});

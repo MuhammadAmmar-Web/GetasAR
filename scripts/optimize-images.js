@@ -103,5 +103,7 @@ const optimizePng = (name, targetWidth) => {
 
 optimizeJpeg('genting.jpg', JPEG_TARGET_WIDTH, JPEG_QUALITY);
 optimizeJpeg('truko.jpg', JPEG_TARGET_WIDTH, JPEG_QUALITY);
+optimizeJpeg('Banjaran.jpg', JPEG_TARGET_WIDTH, JPEG_QUALITY);
+optimizeJpeg('Metep.jpg', JPEG_TARGET_WIDTH, JPEG_QUALITY);
 optimizePng('Logo.png', LOGO_TARGET_WIDTH);
 console.log('[optimize-images] Selesai.');

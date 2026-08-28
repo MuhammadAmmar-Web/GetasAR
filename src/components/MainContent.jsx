@@ -15,6 +15,8 @@ import getas from '../assets/Getas.jpg';
 import mambang from '../assets/Mambang.jpg';
 import seklotok from '../assets/Sekolotok.jpg';
 import jolinggo from '../assets/Jolinggo.jpg';
+import banjaran from '../assets/Banjaran.jpg';
+import metep from '../assets/Metep.jpg';
 
 // Lazy import di MODULE SCOPE — mencegah model reload saat state berubah
 const LazyModel = lazy(() => import('./ModelComponent'));
@@ -92,7 +94,7 @@ const poiData = {
       "Dusun Banjaran berlokasi strategis di pintu masuk wilayah, menjadikannya sebagai gerbang utama dan jalur penghubung penting antara Desa Getas dengan daerah-daerah luar di sekitarnya.",
       "Karena posisinya yang strategis tersebut, mobilitas masyarakat dan pergerakan roda ekonomi di dusun ini terbilang cukup dinamis, menjadikannya titik perlintasan utama bagi warga maupun pengunjung."
     ],
-    image: "https://images.unsplash.com/photo-1542273917363-3b1817f69a5d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: banjaran
   },
   "Poin.002": {
     title: "Dusun Metep",
@@ -104,7 +106,7 @@ const poiData = {
       "Dusun Metep menyuguhkan bentang alam berupa hamparan sawah yang sangat hijau dan asri. Keistimewaan dusun ini terletak pada sistem irigasi alaminya yang sangat terjaga kelestariannya.",
       "Aliran air dari mata air pegunungan langsung mengairi lahan-lahan pertanian warga, menjadikan Dusun Metep sebagai salah satu lumbung pangan lokal yang produktif sekaligus menyuguhkan lanskap pemandangan yang indah."
     ],
-    image: "https://images.unsplash.com/photo-1590494496228-21d1b54c0e66?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: metep
   },
   "Poin.003": {
     title: "Dusun Bleder",

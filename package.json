@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "postinstall": "node scripts/patch-mindar.js",
     "compile-targets": "node scripts/compile-targets.js",
-    "fetch-skybox": "node scripts/fetch-skybox.js"
+    "fetch-skybox": "node scripts/fetch-skybox.js",
+    "fix-ios": "node scripts/fix-negative-scale.cjs"
   },
   "dependencies": {
     "@google/model-viewer": "^4.3.1",
@@ -42,8 +43,8 @@
     "vite": "^8.2.0"
   },
   "engines": {
-    "node": "24.x",
-    "npm": ">=10.5.1"
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   },
   "overrides": {
     "canvas": "^3.2.3"
