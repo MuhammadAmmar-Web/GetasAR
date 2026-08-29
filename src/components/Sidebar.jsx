@@ -33,7 +33,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
           </div>
         </div>
         <a
-          href="https://gardu.site/"
+          href="https://pesonagetas.com"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 text-[11px] text-slate-700 bg-slate-50 hover:bg-slate-100 transition-colors"
         >
           <ExternalLink size={12} />
@@ -55,15 +55,15 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
                 {/* Active pill background */}
                 <span
                   className={`absolute inset-x-1 inset-y-0 rounded-xl transition-all duration-300 ${isActive
-                      ? 'bg-blue-500/10 ring-1 ring-blue-500/30'
-                      : 'bg-transparent'
+                    ? 'bg-blue-500/10 ring-1 ring-blue-500/30'
+                    : 'bg-transparent'
                     }`}
                 ></span>
                 <span className="relative flex items-center justify-center">
                   <span
                     className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${isActive
-                        ? 'bg-blue-500 text-white shadow-[0_4px_14px_rgba(59,130,246,0.4)] scale-105'
-                        : 'text-slate-400 group-hover:bg-slate-100 group-hover:text-blue-500'
+                      ? 'bg-blue-500 text-white shadow-[0_4px_14px_rgba(59,130,246,0.4)] scale-105'
+                      : 'text-slate-400 group-hover:bg-slate-100 group-hover:text-blue-500'
                       }`}
                   >
                     <Icon size={18} />
@@ -149,11 +149,11 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
 
         {/* Footer Button */}
         <div className="mt-auto flex flex-col gap-4">
-          <a href="https://gardu.site/" className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg no-underline text-slate-700 bg-white hover:bg-slate-50 text-[13px] transition-colors duration-200 font-semibold shadow-sm">
+          <a href="https://pesonagetas.com" className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg no-underline text-slate-700 bg-white hover:bg-slate-50 text-[13px] transition-colors duration-200 font-semibold shadow-sm">
             <ExternalLink size={16} />
             Kunjungi Website
           </a>
-          <div className="text-[11px] text-slate-400 text-left pl-4">&copy; 2026 Getas AR</div>
+          <div className="text-[11px] text-slate-400 text-left pl-4">&copy; 2026 TIM PPK Ormawa BEM FIK 2026 Udinus. Seluruh hak dilindungi.</div>
         </div>
       </aside>
     </>
