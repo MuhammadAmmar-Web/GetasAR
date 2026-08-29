@@ -46,8 +46,10 @@ const ARProduk = ({ setActiveTab }) => {
         texture.needsUpdate = true;
       });
 
-      // PlaneGeometry dengan rasio 16:9 (lebar 1, tinggi 0.5625)
-      const geometry = new THREE.PlaneGeometry(1, 0.5625);
+      // PlaneGeometry dengan rasio 16:9 (skala diperbesar menjadi 2.2x agar video tampil jauh lebih besar & jelas)
+      const videoWidth = 2.2;
+      const videoHeight = videoWidth * (9 / 16); // ~1.2375
+      const geometry = new THREE.PlaneGeometry(videoWidth, videoHeight);
       const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
       const mesh = new THREE.Mesh(geometry, material);
 
