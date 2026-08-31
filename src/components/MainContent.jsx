@@ -194,7 +194,7 @@ const poiData = {
   }
 };
 
-const MainContent = () => {
+const MainContent = ({ setActiveTab }) => {
   const [showCard, setShowCard] = useState(false);
   const [showLongDetail, setShowLongDetail] = useState(false);
   const [selectedPoi, setSelectedPoi] = useState(null);
@@ -240,15 +240,8 @@ const MainContent = () => {
         setArSelectedPoi(null);
         setArShowGuide(false);
         setArShowAbout(false);
-        setArFallback(true);
-        enableSkybox(mv);
-      }
-    };
-    // Skybox (foto hutan) hanya dimuat untuk viewer fallback non-AR.
-    // Saat mode AR, latar diganti kamera asli — skybox hanya membebani startup AR.
-    const enableSkybox = (target) => {
-      if (target && !target.skyboxImage) {
-        target.skyboxImage = '/forest360.jpg';
+        setShowDesktopViewer(false);
+        setActiveTab('peta-3d');
       }
     };
     // Deteksi iOS — Quick Look native tidak mendukung hotspot interaktif
@@ -259,25 +252,25 @@ const MainContent = () => {
       if (pendingARRef.current) {
         pendingARRef.current = false;
 
-        // iOS: langsung tampilkan 3D viewer + hotspot (Quick Look tidak support overlay)
+        // iOS: langsung tampilkan 3D viewer + hotspot (Quick Look tidak support overlay), alihkan ke fallback image tracking
         if (isIOS) {
-          setArFallback(true);
-          enableSkybox(mv);
+          setShowDesktopViewer(false);
+          setActiveTab('peta-3d');
           return;
         }
 
         if (!mv.canActivateAR) {
-          // Device tanpa ARCore/ARKit: tampilkan viewer 3D saja
-          setArFallback(true);
-          enableSkybox(mv);
+          // Device tanpa ARCore/ARKit: alihkan ke tab peta-3d
+          setShowDesktopViewer(false);
+          setActiveTab('peta-3d');
           return;
         }
         try {
           mv.activateAR();
         } catch (error) {
           console.error("Gagal membuka AR:", error);
-          setArFallback(true);
-          enableSkybox(mv);
+          setShowDesktopViewer(false);
+          setActiveTab('peta-3d');
         }
       }
     };
@@ -287,7 +280,7 @@ const MainContent = () => {
       mv.removeEventListener('ar-status', handleARStatus);
       mv.removeEventListener('load', handleLoad);
     };
-  }, [showDesktopViewer]);
+  }, [showDesktopViewer, setActiveTab]);
 
   const handleCloseViewer = () => {
     const mv = modelViewerRef.current;
@@ -308,15 +301,44 @@ const MainContent = () => {
     // Deteksi mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // Desktop: peta 3D utama sudah interaktif — tanpa model-viewer, tombol tidak melakukan apa-apa
+    // Desktop: peta 3D utama sudah interaktif — tombol tidak melakukan apa-apa
     if (!isMobile) return;
 
+    // --- CEK DUKUNGAN WEBXR SEBELUM LOAD APAPUN ---
+    // Ini jauh lebih cepat daripada menunggu model-viewer + GLB 4MB selesai dimuat
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // iOS: Quick Look tidak mendukung overlay interaktif, langsung ke image tracking
+    if (isIOS) {
+      setActiveTab('peta-3d');
+      return;
+    }
+
+    // Tidak ada WebXR API sama sekali (browser/device tidak mendukung)
+    if (!navigator.xr) {
+      setActiveTab('peta-3d');
+      return;
+    }
+
+    // Cek apakah immersive-ar session didukung (ARCore/ARKit/WebXR runtime)
     try {
-      // Model-viewer (~470KB) hanya dimuat saat tombol diklik, bukan di load awal
+      const arSupported = await navigator.xr.isSessionSupported('immersive-ar');
+      if (!arSupported) {
+        setActiveTab('peta-3d');
+        return;
+      }
+    } catch {
+      // Jika isSessionSupported() melempar error, berarti WebXR tidak didukung
+      setActiveTab('peta-3d');
+      return;
+    }
+
+    // WebXR didukung — baru muat model-viewer
+    try {
       await import('@google/model-viewer');
     } catch (error) {
       console.error('Gagal memuat model-viewer:', error);
-      setArFallback(true);
+      setActiveTab('peta-3d');
       return;
     }
 

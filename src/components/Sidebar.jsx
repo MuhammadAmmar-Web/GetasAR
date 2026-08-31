@@ -1,9 +1,10 @@
-import { Map, Box, HelpCircle, Info, ExternalLink } from 'lucide-react';
+import { Map, Box, HelpCircle, Info, ExternalLink, MapPin } from 'lucide-react';
 import logo from '../assets/Logo.png';
 
 const mainNav = [
   { id: 'peta-desa', label: 'AR Peta Desa', sub: 'Scan QR Peta', icon: Map },
   { id: 'ar-produk', label: 'AR Produk', sub: 'Scan QR Produk', icon: Box },
+  { id: 'peta-3d', label: 'Peta 3D Interaktif', sub: 'Tanpa WebXR', icon: MapPin },
 ];
 
 const guideNav = [
@@ -73,7 +74,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
                   className={`relative mt-1 text-[10px] font-medium transition-colors ${isActive ? 'text-blue-600 font-bold' : 'text-slate-500 group-hover:text-blue-500'
                     }`}
                 >
-                  {id === 'peta-desa' ? 'Peta' : id === 'ar-produk' ? 'Produk' : id === 'panduan' ? 'Panduan' : 'Tentang'}
+                  {id === 'peta-desa' ? 'Peta AR' : id === 'ar-produk' ? 'Produk' : id === 'peta-3d' ? 'Peta 3D' : id === 'panduan' ? 'Panduan' : 'Tentang'}
                 </span>
               </button>
             );

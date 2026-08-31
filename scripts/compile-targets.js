@@ -88,15 +88,15 @@ const main = async () => {
     process.exit(1);
   }
 
-  // Urutan anchor harus sesuai dengan index anchor di ARProduk.jsx:
-  //   0 = Kopi Gempol, 1 = Susu Kambing, 2 = Kolang Kaling, dst
-  // Karena ARProduk hanya memakai index 0,1,2, kita urutkan agar
-  // index 0 = Kopi Gempol, 1 = Susu Kambing, 2 = Kolang Kaling.
+  // Urutan anchor untuk all tracking:
+  //   0-3 = Products (ARProduk.jsx)
+  //   4 = Map Marker (ARFallbackMap.jsx - fallback tracking)
   const ordered = [
     'kopi gempol.png',   // index 0
     'susu kambing.png',  // index 1
     'kolang kaling.png', // index 2
     'gula aren.png',     // index 3
+    'map-marker.png',    // index 4 (fallback tracking untuk peta)
   ];
 
   const images = [];
@@ -109,6 +109,18 @@ const main = async () => {
     images.push(decodePngGrey(p));
   }
 
+  // Backup targets.mind yang ada
+  const backupPath = join(projectRoot, 'public', 'targets.mind.backup');
+  if (existsSync(outputPath)) {
+    try {
+      const backupData = readFileSync(outputPath);
+      writeFileSync(backupPath, backupData);
+      console.log(`Backup targets.mind berhasil: ${backupPath}`);
+    } catch (err) {
+      console.warn('Gagal backup targets.mind:', err.message);
+    }
+  }
+  
   console.log(`Mengkompilasi ${images.length} target...`);
 
   const data = [];

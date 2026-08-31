@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 // saat tab terkait dibuka, bukan di load awal.
 const MainContent = lazy(() => import('./components/MainContent'))
 const ARProduk = lazy(() => import('./components/views/ARProduk'))
+const ARFallback = lazy(() => import('./ar-fallback.jsx'))
 const Panduan = lazy(() => import('./components/views/Panduan'))
 const Tentang = lazy(() => import('./components/views/Tentang'))
 
@@ -39,6 +40,8 @@ function App() {
         return <MainContent {...props} />
       case 'ar-produk':
         return <ARProduk {...props} />
+      case 'peta-3d':
+        return <ARFallback {...props} />
       case 'panduan':
         return <Panduan {...props} />
       case 'tentang':
