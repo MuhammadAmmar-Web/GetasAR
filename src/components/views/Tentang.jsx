@@ -86,8 +86,8 @@ const Tentang = () => {
                 <Box size={24} />
               </div>
               <div>
-                <p className="text-[13px] text-slate-600 font-medium mb-1">Dikembangkan dalam program PPKO:</p>
-                <p className="text-[14px] text-blue-700 font-bold leading-tight">Pengembangan Sustainable Tourism Desa Wisata Getas Agro-Edu Ecotourism.</p>
+                <p className="text-[13px] text-slate-600 font-medium mb-1">Dikembangkan dalam program GARDU:</p>
+                <p className="text-[14px] text-blue-700 font-bold leading-tight">Genting Agro-Edu Eco Experience.</p>
               </div>
             </div>
           </div>

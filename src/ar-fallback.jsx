@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { ScanLine, X, MapPin, Clock, Map as MapIcon, Info, HelpCircle } from 'lucide-react';
+import { ScanLine, X, MapPin, Clock, Map as MapIcon, Info, HelpCircle, Hand } from 'lucide-react';
 
 // POI Images
 import genting from './assets/genting.jpg';
@@ -374,7 +374,7 @@ const ARFallback = ({ setActiveTab }) => {
               <h2 className="text-lg md:text-xl text-slate-900 font-bold m-0 text-left">Pindai Peta Kertas</h2>
             </div>
             <p className="text-[13px] md:text-sm text-slate-600 m-0 text-left leading-relaxed">
-              Arahkan kamera ke penanda gambar <strong>map-marker.png</strong> untuk menampilkan peta 3D Desa Getas di dunia nyata.
+              Arahkan kamera ke penanda gambar untuk menampilkan peta 3D Desa Getas di dunia nyata.
             </p>
           </div>
         </div>
@@ -475,97 +475,105 @@ const ARFallback = ({ setActiveTab }) => {
 
       {/* ─────────────── Guide Modal ─────────────── */}
       {showGuide && (
-        <div className="absolute inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-            <div className="relative h-40 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-              <button
-                onClick={() => setShowGuide(false)}
-                className="absolute top-4 right-4 w-9 h-9 bg-white/25 hover:bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-              <div className="text-center px-6">
-                <h2 className="text-2xl font-bold text-white">Panduan AR Peta</h2>
-                <p className="text-blue-100 text-sm mt-1">Teknologi Augmented Reality untuk Jelajah Desa</p>
-              </div>
+        <div className="absolute inset-0 z-[110] flex items-center justify-center p-6 bg-slate-30/30 backdrop-blur-md pointer-events-auto">
+          <div className="glass-panel relative w-full max-w-[400px] p-8 flex flex-col items-center text-center shadow-xl border border-slate-200 bg-white animate-in fade-in zoom-in-95 duration-300">
+
+            <button
+              onClick={() => setShowGuide(false)}
+              className="absolute top-3 right-3 w-9 h-9 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Tutup"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
+              <HelpCircle size={32} className="text-blue-600" />
             </div>
-            <div className="p-6 md:p-8">
-              <div className="flex flex-col gap-4">
-                {[
-                  { num: 1, title: 'Siapkan Penanda', desc: 'Gunakan gambar map-marker.png (cetak atau tampilkan di HP/laptop lain).' },
-                  { num: 2, title: 'Pindai Penanda', desc: 'Arahkan kamera ke penanda gambar secara tegak lurus dan perlahan.' },
-                  { num: 3, title: 'Jelajahi Potensi', desc: 'Setelah peta 3D muncul, ketuk ikon pin biru untuk melihat potensi setiap Dusun.' },
-                ].map(({ num, title, desc }) => (
-                  <div key={num} className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
-                      {num}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 text-sm md:text-base">{title}</h3>
-                      <p className="text-xs md:text-sm text-slate-600 mt-1">{desc}</p>
-                    </div>
+
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Cara Menjelajahi Peta AR </h2>
+            <p className="text-slate-600 text-sm mb-8 leading-relaxed">
+              Jelajahi potensi desa secara interaktif dengan teknologi Augmented Reality
+            </p>
+
+            <div className="flex flex-col gap-6 w-full text-left mb-8">
+              {[
+                { icon: ScanLine, title: 'Temukan Gambar Penanda', desc: 'Cari dan temukan gambar penanda khusus yang telah dipasang di area tempat wisata.' },
+                { icon: MapPin, title: 'Pindai Penanda', desc: 'Arahkan kamera HP ke gambar penanda secara perlahan hingga peta muncul' },
+                { icon: Hand, title: 'Jelajahi Potensi', desc: 'Setelah peta 3D muncul, ketuk obejek 3D yang muncul untuk melihat informasi potensi setiap Dusun.' },
+              ].map(({ icon: Icon, title, desc }) => (
+                <div key={title} className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                    <Icon size={20} className="text-blue-500" />
                   </div>
-                ))}
-              </div>
-              <button
-                onClick={() => {
-                  setShowGuide(false);
-                  localStorage.setItem('arFallbackHasSeenGuide', 'true');
-                }}
-                className="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-colors shadow-md cursor-pointer"
-              >
-                Mulai Jelajah
-              </button>
+                  <div>
+                    <h4 className="text-slate-900 font-bold text-sm mb-1">{title}</h4>
+                    <p className="text-slate-500 text-xs leading-relaxed">{desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
+
+            <button
+              onClick={() => {
+                setShowGuide(false);
+                localStorage.setItem('arFallbackHasSeenGuide', 'true');
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-full transition-colors duration-200 shadow-md shadow-blue-500/20 cursor-pointer"
+            >
+              Mulai Jelajah
+            </button>
           </div>
         </div>
       )}
 
       {/* ─────────────── About Modal ─────────────── */}
       {showAbout && (
-        <div className="absolute inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-            <div className="relative h-40 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <button
-                onClick={() => setShowAbout(false)}
-                className="absolute top-4 right-4 w-9 h-9 bg-white/25 hover:bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-              <div className="text-center px-6">
-                <h2 className="text-2xl font-bold text-white">Tentang Aplikasi</h2>
-                <p className="text-indigo-100 text-sm mt-1">Visualisasi AR Peta Desa Getas</p>
+        <div className="absolute inset-0 z-[110] flex items-center justify-center p-6 bg-slate-30/30 backdrop-blur-md pointer-events-auto">
+          <div className="glass-panel relative w-full max-w-[400px] p-8 flex flex-col items-center text-center shadow-xl border border-slate-200 bg-white animate-in fade-in zoom-in-95 duration-300">
+
+            <button
+              onClick={() => setShowAbout(false)}
+              className="absolute top-3 right-3 w-9 h-9 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Tutup"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
+              <Info size={32} className="text-blue-600" />
+            </div>
+
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Tentang Aplikasi</h2>
+            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+              Visualisasi AR Peta Desa Getas.
+            </p>
+
+            <div className="flex flex-col gap-4 text-left w-full mb-6">
+              <p className="text-slate-600 text-xs leading-relaxed">
+                <strong className="text-slate-900">Getas AR Peta (Image Tracking)</strong> adalah sistem visualisasi berbasis teknologi <span className="text-blue-600 font-semibold">Augmented Reality (AR)</span> yang memetakan batas wilayah dan potensi setiap Dusun secara langsung dari web browser.
+              </p>
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col gap-3 text-xs w-full">
+                {[
+                  ['Karya', 'PPK ORMAWA BEM FIK UDINUS'],
+                  ['Program', 'GARDU'],
+                  ['Versi', '1.0.0 (MindAR-Three)'],
+                  ['Tech Stack', 'MindAR, Three.js, React'],
+                  ['Tahun', '2026'],
+                ].map(([label, val]) => (
+                  <div key={label} className="flex justify-between items-start border-b border-slate-100 last:border-0 pb-1.5 last:pb-0 gap-2">
+                    <span className="text-slate-500 font-semibold shrink-0">{label}</span>
+                    <span className="text-slate-800 font-bold text-right leading-tight">{val}</span>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="p-6 md:p-8">
-              <div className="flex flex-col gap-4 text-sm text-slate-600 leading-relaxed">
-                <p>
-                  <strong className="text-slate-900">Getas AR Peta (Image Tracking)</strong> adalah sistem visualisasi berbasis teknologi <span className="text-blue-600 font-semibold">Augmented Reality (AR)</span> yang memetakan batas wilayah dan potensi setiap Dusun.
-                </p>
-                <p>
-                  Halaman ini dirancang khusus untuk memindai <strong>map-marker.png</strong> dan memproyeksikan lanskap 3D secara langsung.
-                </p>
-                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 grid grid-cols-2 gap-4 text-xs">
-                  {[
-                    ['Karya', 'PPK ORMAWA BEM FIK UDINUS'],
-                    ['Versi', '1.0.0 (MindAR-Three)'],
-                    ['Tech Stack', 'MindAR, Three.js, React'],
-                    ['Tahun', '2026'],
-                  ].map(([label, val]) => (
-                    <div key={label}>
-                      <span className="text-slate-500 uppercase font-semibold block">{label}</span>
-                      <span className="text-slate-900 font-medium">{val}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={() => setShowAbout(false)}
-                className="w-full mt-8 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition-colors shadow-md cursor-pointer"
-              >
-                Tutup
-              </button>
-            </div>
+
+            <button
+              onClick={() => setShowAbout(false)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-full transition-colors duration-200 shadow-md shadow-blue-500/20 cursor-pointer"
+            >
+              Tutup
+            </button>
           </div>
         </div>
       )}
