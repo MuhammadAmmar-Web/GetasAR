@@ -17,6 +17,7 @@ import seklotok from '../assets/Sekolotok.jpg';
 import jolinggo from '../assets/Jolinggo.jpg';
 import banjaran from '../assets/Banjaran.jpg';
 import metep from '../assets/Metep.jpg';
+import sanggar from '../assets/Sanggar.jpg';
 
 // Lazy import di MODULE SCOPE — mencegah model reload saat state berubah
 const LazyModel = lazy(() => import('./ModelComponent'));
@@ -130,7 +131,7 @@ const poiData = {
       "Bagi para pecinta kopi, Dusun Sanggar adalah tempat yang istimewa. Kondisi geografis dan ketinggian dusun ini sangat ideal untuk perkebunan kopi, khususnya untuk budidaya kopi jenis Robusta dan Excelsa.",
       "Kopi dari Dusun Sanggar memiliki cita rasa dan aroma khas yang kuat. Proses pasca-panen yang dilakukan oleh petani lokal secara tekun menghasilkan biji kopi berkualitas tinggi yang siap dipasarkan."
     ],
-    image: "https://images.unsplash.com/photo-1511920170033-f8396924c348?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    image: sanggar
   },
   "Poin.005": {
     title: "Dusun Getas",
