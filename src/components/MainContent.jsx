@@ -208,6 +208,7 @@ const MainContent = ({ setActiveTab }) => {
   const [arFallback, setArFallback] = useState(false);
   const [poiCoordinates, setPoiCoordinates] = useState({});
   const modelViewerRef = useRef(null);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const handleMarkerClick = useCallback((poiKey) => {
     const data = poiData[poiKey];
@@ -833,14 +834,16 @@ const MainContent = ({ setActiveTab }) => {
         <img src={logoppko} alt="Logo PPKO" loading="lazy" className="h-8 md:h-15 object-contain drop-shadow-md bg-white/50 backdrop-blur-sm p-1.5 rounded-lg border border-white/50" />
       </div>
 
-      {/* Top Right AR Button - Responsif Mobile & Desktop */}
-      <button
-        onClick={handleARClick}
-        className="absolute top-20 md:top-6 right-4 md:right-6 flex items-center gap-2.5 px-4 md:px-5 py-2 md:py-2.5 rounded-full z-20 bg-white from-white to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-black shadow-lg shadow-blue-900/50 hover:shadow-blue-900/70 transition-all border border-blue-400/30 cursor-pointer transform hover:scale-105 active:scale-95"
-      >
-        <ScanLine size={18} className="text-black" />
-        <span className="text-[12px] md:text-[13px] font-bold text-black tracking-wide">Lihat 3D / AR</span>
-      </button>
+      {/* Top Right AR Button - Mobile only */}
+      {isMobile && (
+        <button
+          onClick={handleARClick}
+          className="absolute top-20 md:top-6 right-4 md:right-6 flex items-center gap-2.5 px-4 md:px-5 py-2 md:py-2.5 rounded-full z-20 bg-white from-white to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-black shadow-lg shadow-blue-900/50 hover:shadow-blue-900/70 transition-all border border-blue-400/30 cursor-pointer transform hover:scale-105 active:scale-95"
+        >
+          <ScanLine size={18} className="text-black" />
+          <span className="text-[12px] md:text-[13px] font-bold text-black tracking-wide">Lihat 3D / AR</span>
+        </button>
+      )}
 
       {/* Detail Card (3D viewer) */}
       {showCard && activeData && (
